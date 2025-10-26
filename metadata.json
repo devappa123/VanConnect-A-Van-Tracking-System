@@ -1,0 +1,7 @@
+{
+  "name": "Van Connect: College Van Tracking",
+  "description": "A Progressive Web App for college students, van drivers, and administrators to efficiently track, manage, and communicate during college transport operations. It provides live van tracking, student–driver communication, and admin control panels.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

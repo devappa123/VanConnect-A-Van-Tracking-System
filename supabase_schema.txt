@@ -1,0 +1,223 @@
+-- This script is fully idempotent. You can run it multiple times without errors.
+
+-- 1. CREATE CUSTOM TYPES (ENUMS)
+DO $$ BEGIN
+    CREATE TYPE public.user_role AS ENUM ('student', 'driver', 'admin');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE public.complaint_status AS ENUM ('Pending', 'Resolved');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE public.attendance_status AS ENUM ('Present', 'Absent');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+
+-- 2. CREATE TABLES
+CREATE TABLE IF NOT EXISTS public.users (
+    id uuid NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    name text,
+    email text UNIQUE,
+    role public.user_role NOT NULL,
+    avatar_url text,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.vans (
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    van_no text NOT NULL UNIQUE,
+    route_name text,
+    driver_id uuid, -- Foreign key is added after drivers table is created
+    capacity integer NOT NULL DEFAULT 0,
+    created_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.students (
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id uuid NOT NULL UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
+    usn text,
+    department text,
+    phone text,
+    van_id uuid REFERENCES public.vans(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.drivers (
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id uuid NOT NULL UNIQUE REFERENCES public.users(id) ON DELETE CASCADE,
+    phone text,
+    van_id uuid REFERENCES public.vans(id) ON DELETE SET NULL
+);
+
+-- Add the foreign key constraint from vans to drivers now that drivers table exists
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'vans_driver_id_fkey' AND conrelid = 'public.vans'::regclass
+    ) THEN
+        ALTER TABLE public.vans
+        ADD CONSTRAINT vans_driver_id_fkey
+        FOREIGN KEY (driver_id) REFERENCES public.drivers(id) ON DELETE SET NULL;
+    END IF;
+END;
+$$;
+
+CREATE TABLE IF NOT EXISTS public.locations (
+    van_id uuid NOT NULL PRIMARY KEY REFERENCES public.vans(id) ON DELETE CASCADE,
+    latitude double precision NOT NULL,
+    longitude double precision NOT NULL,
+    "timestamp" timestamp with time zone NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.complaints (
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    student_id uuid NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+    driver_id uuid NOT NULL REFERENCES public.drivers(id) ON DELETE CASCADE,
+    description text NOT NULL,
+    status public.complaint_status NOT NULL DEFAULT 'Pending'::public.complaint_status,
+    admin_reply text,
+    created_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.attendance (
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    student_id uuid NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
+    van_id uuid NOT NULL REFERENCES public.vans(id) ON DELETE CASCADE,
+    "date" date NOT NULL DEFAULT now()::date,
+    status public.attendance_status NOT NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT attendance_student_id_date_key UNIQUE (student_id, date)
+);
+
+
+-- 3. SETUP AUTH TRIGGER (CRITICAL FIX FOR PROFILE CREATION)
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+  -- Insert into public.users table
+  INSERT INTO public.users (id, name, email, role)
+  VALUES (
+    NEW.id,
+    NEW.raw_user_meta_data->>'name',
+    NEW.email,
+    (NEW.raw_user_meta_data->>'role')::public.user_role
+  );
+
+  -- Based on role, insert into students or drivers table
+  IF (NEW.raw_user_meta_data->>'role')::public.user_role = 'student' THEN
+    INSERT INTO public.students (user_id, usn, phone)
+    VALUES (
+      NEW.id,
+      NEW.raw_user_meta_data->>'usn',
+      NEW.raw_user_meta_data->>'phone'
+    );
+  ELSIF (NEW.raw_user_meta_data->>'role')::public.user_role = 'driver' THEN
+    INSERT INTO public.drivers (user_id, phone)
+    VALUES (
+      NEW.id,
+      NEW.raw_user_meta_data->>'phone'
+    );
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+-- Drop trigger if exists and recreate to ensure it's up to date.
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+
+-- 4. SETUP 'updated_at' TRIGGER
+CREATE OR REPLACE FUNCTION public.moddatetime()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+DROP TRIGGER IF EXISTS handle_updated_at ON public.users;
+CREATE TRIGGER handle_updated_at
+BEFORE UPDATE ON public.users
+FOR EACH ROW
+EXECUTE PROCEDURE public.moddatetime();
+
+
+-- 5. ENABLE ROW LEVEL SECURITY (RLS) ON ALL TABLES
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.drivers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.vans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.locations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.complaints ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
+
+
+-- 6. ADD RLS POLICIES
+-- Helper function to check admin role
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS boolean AS $$
+  SELECT EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin');
+$$ LANGUAGE sql SECURITY DEFINER;
+
+
+-- POLICIES for 'users' table
+DROP POLICY IF EXISTS "Allow admin full access on users" ON public.users;
+CREATE POLICY "Allow admin full access on users" ON public.users FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Allow users to view their own data" ON public.users;
+CREATE POLICY "Allow users to view their own data" ON public.users FOR SELECT USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Allow users to update their own data" ON public.users;
+CREATE POLICY "Allow users to update their own data" ON public.users FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- POLICIES for 'students' table
+DROP POLICY IF EXISTS "Allow admin full access on students" ON public.students;
+CREATE POLICY "Allow admin full access on students" ON public.students FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Allow student to view their own profile" ON public.students;
+CREATE POLICY "Allow student to view their own profile" ON public.students FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Allow student to update their own profile" ON public.students;
+CREATE POLICY "Allow student to update their own profile" ON public.students FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- POLICIES for 'drivers' table
+DROP POLICY IF EXISTS "Allow admin full access on drivers" ON public.drivers;
+CREATE POLICY "Allow admin full access on drivers" ON public.drivers FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Allow driver to view their own profile" ON public.drivers;
+CREATE POLICY "Allow driver to view their own profile" ON public.drivers FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Allow driver to update their own profile" ON public.drivers;
+CREATE POLICY "Allow driver to update their own profile" ON public.drivers FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- POLICIES for 'vans' table
+DROP POLICY IF EXISTS "Allow admin full access on vans" ON public.vans;
+CREATE POLICY "Allow admin full access on vans" ON public.vans FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Allow authenticated users to view vans" ON public.vans;
+CREATE POLICY "Allow authenticated users to view vans" ON public.vans FOR SELECT USING (auth.role() = 'authenticated');
+
+-- POLICIES for 'locations' table
+DROP POLICY IF EXISTS "Allow admin full access on locations" ON public.locations;
+CREATE POLICY "Allow admin full access on locations" ON public.locations FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Allow authenticated users to see locations" ON public.locations;
+CREATE POLICY "Allow authenticated users to see locations" ON public.locations FOR SELECT USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Allow driver to update their van location" ON public.locations;
+CREATE POLICY "Allow driver to update their van location" ON public.locations FOR ALL
+USING (EXISTS (SELECT 1 FROM drivers WHERE user_id = auth.uid() AND drivers.van_id = locations.van_id));
+
+-- POLICIES for 'complaints' table
+DROP POLICY IF EXISTS "Allow admin full access on complaints" ON public.complaints;
+CREATE POLICY "Allow admin full access on complaints" ON public.complaints FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Allow students to view their own complaints" ON public.complaints;
+CREATE POLICY "Allow students to view their own complaints" ON public.complaints FOR SELECT USING (EXISTS (SELECT 1 FROM students WHERE user_id = auth.uid() and id = complaints.student_id));
+DROP POLICY IF EXISTS "Allow students to create complaints" ON public.complaints;
+CREATE POLICY "Allow students to create complaints" ON public.complaints FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM students WHERE user_id = auth.uid() and id = complaints.student_id));
+
+-- POLICIES for 'attendance' table
+DROP POLICY IF EXISTS "Allow admin full access on attendance" ON public.attendance;
+CREATE POLICY "Allow admin full access on attendance" ON public.attendance FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "Allow students to view their own attendance" ON public.attendance;
+CREATE POLICY "Allow students to view their own attendance" ON public.attendance FOR SELECT USING (EXISTS (SELECT 1 FROM students WHERE user_id = auth.uid() and id = attendance.student_id));
