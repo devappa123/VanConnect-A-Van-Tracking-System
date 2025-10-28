@@ -22,7 +22,8 @@ const ComplaintsPage: React.FC = () => {
 const StudentComplaintsView: React.FC = () => {
     const { user } = useAuth();
     const [complaints, setComplaints] = useState<Complaint[]>([]);
-    const [driver, setDriver] = useState<Driver | null>(null);
+    // FIX: Updated driver state type to include 'name' and 'email' properties, aligning with the data returned from getDriverByVanId.
+    const [driver, setDriver] = useState<(Driver & { name: string; email: string; }) | null>(null);
     const [description, setDescription] = useState('');
     const [error, setError] = useState('');
 

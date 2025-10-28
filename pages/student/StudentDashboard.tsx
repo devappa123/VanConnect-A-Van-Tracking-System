@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../../components/layout/MainLayout';
-import { UserRole, LocationUpdate, AutocompletePrediction, Attendance, Driver } from '../../types';
+import { UserRole, LocationUpdate, Attendance, Driver, Notification } from '../../types';
 import Card from '../../components/common/Card';
 import MapView from '../../components/common/MapView';
-import { getLiveVanLocation, getDriverByVanId, getStudentAttendance } from '../../services/supabaseService';
-import { autocompletePlaces } from '../../services/placesService';
-import { Phone, MessageSquare, Search, UserCheck, Calendar } from 'lucide-react';
+import { getLiveVanLocation, getDriverByVanId, getStudentAttendance, getNotificationsByVanNumber } from '../../services/supabaseService';
+import { supabase } from '../../services/supabaseClient';
+import { Phone, MessageSquare, UserCheck, Calendar, Bell } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const StudentDashboard: React.FC = () => {
@@ -14,13 +14,12 @@ const StudentDashboard: React.FC = () => {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [driver, setDriver] = useState<(Driver & { name: string; email: string; }) | null>(null);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<AutocompletePrediction[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const vanId = user?.student?.van_id;
+  const vanNumber = user?.student?.van_number;
 
   // Effect to get user's location
   useEffect(() => {
@@ -47,14 +46,30 @@ const StudentDashboard: React.FC = () => {
       }
 
       try {
-        const [location, driverDetails, attendanceRecords] = await Promise.all([
-            getLiveVanLocation(vanId),
-            getDriverByVanId(vanId),
-            getStudentAttendance(user.student.id)
+        // FIX: Replaced dynamic promise array with explicit promises to ensure type safety with Promise.all.
+        const locationPromise = getLiveVanLocation(vanId);
+        const driverPromise = getDriverByVanId(vanId);
+        const attendancePromise = getStudentAttendance(user.student.id);
+        const notificationsPromise = vanNumber
+          ? getNotificationsByVanNumber(vanNumber)
+          : Promise.resolve([]);
+
+        const [
+          location,
+          driverDetails,
+          attendanceRecords,
+          initialNotifications,
+        ] = await Promise.all([
+          locationPromise,
+          driverPromise,
+          attendancePromise,
+          notificationsPromise,
         ]);
+        
         setVanLocation(location);
         setDriver(driverDetails);
         setAttendance(attendanceRecords);
+        setNotifications(initialNotifications);
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
         setError("Could not fetch required data.");
@@ -73,22 +88,23 @@ const StudentDashboard: React.FC = () => {
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [user, vanId]);
-  
-  // Effect for place search
+  }, [user, vanId, vanNumber]);
+
+  // Effect for real-time notifications
   useEffect(() => {
-    if (searchQuery.length < 3) {
-      setSearchResults([]);
-      return;
+    if (!vanNumber) return;
+
+    const channel = supabase.channel(`public:notifications:van_number=eq.${vanNumber}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
+        setNotifications(prev => [payload.new as Notification, ...prev]);
+      })
+      .subscribe();
+    
+    return () => {
+        supabase.removeChannel(channel);
     }
-    const handler = setTimeout(async () => {
-        setIsSearching(true);
-        const results = await autocompletePlaces(searchQuery).catch(() => []);
-        setSearchResults(results);
-        setIsSearching(false);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
+  }, [vanNumber]);
+  
 
   const isLoading = loading || !userLocation;
 
@@ -140,6 +156,23 @@ const StudentDashboard: React.FC = () => {
                 </div>
                 </>
             ) : <p className="text-gray-500 dark:text-gray-400">Driver not assigned.</p>}
+          </Card>
+           <Card title="Notifications">
+             <div className="space-y-3 max-h-48 overflow-y-auto">
+                {notifications.length > 0 ? notifications.map(notif => (
+                  <div key={notif.id} className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                      <div className="flex items-start">
+                          <Bell className="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm">{notif.message}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(notif.created_at).toLocaleString()}</p>
+                          </div>
+                      </div>
+                  </div>
+                )) : (
+                  <p className="text-center text-gray-500 dark:text-gray-400">No notifications from your driver.</p>
+                )}
+            </div>
           </Card>
           <Card title="My Attendance">
              <div className="space-y-3 max-h-48 overflow-y-auto">

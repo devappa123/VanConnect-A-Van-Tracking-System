@@ -162,10 +162,15 @@ ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
 
 
 -- 6. ADD RLS POLICIES
--- Helper function to check admin role
+-- Helper functions to check roles
 CREATE OR REPLACE FUNCTION is_admin()
 RETURNS boolean AS $$
   SELECT EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin');
+$$ LANGUAGE sql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION get_my_role()
+RETURNS text AS $$
+  SELECT role::text FROM public.users WHERE id = auth.uid() LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER;
 
 
@@ -177,6 +182,25 @@ CREATE POLICY "Allow users to view their own data" ON public.users FOR SELECT US
 DROP POLICY IF EXISTS "Allow users to update their own data" ON public.users;
 CREATE POLICY "Allow users to update their own data" ON public.users FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Allow drivers to view user profiles of their students" ON public.users;
+CREATE POLICY "Allow drivers to view user profiles of their students" ON public.users
+FOR SELECT USING (
+  get_my_role() = 'driver' AND
+  id IN (
+    SELECT s.user_id FROM public.students s WHERE s.van_id = (SELECT d.van_id FROM public.drivers d WHERE d.user_id = auth.uid())
+  )
+);
+
+DROP POLICY IF EXISTS "Allow students to view driver user profile" ON public.users;
+CREATE POLICY "Allow students to view driver user profile" ON public.users
+FOR SELECT USING (
+  get_my_role() = 'student' AND
+  id IN (
+    SELECT d.user_id FROM public.drivers d WHERE d.van_id = (SELECT s.van_id FROM public.students s WHERE s.user_id = auth.uid())
+  )
+);
+
+
 -- POLICIES for 'students' table
 DROP POLICY IF EXISTS "Allow admin full access on students" ON public.students;
 CREATE POLICY "Allow admin full access on students" ON public.students FOR ALL USING (is_admin()) WITH CHECK (is_admin());
@@ -185,6 +209,16 @@ CREATE POLICY "Allow student to view their own profile" ON public.students FOR S
 DROP POLICY IF EXISTS "Allow student to update their own profile" ON public.students;
 CREATE POLICY "Allow student to update their own profile" ON public.students FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
+-- FIX: Updated policy to be more direct and fix the issue where students were not visible to drivers.
+DROP POLICY IF EXISTS "Allow drivers to view their assigned students" ON public.students;
+CREATE POLICY "Allow drivers to view their assigned students" ON public.students
+FOR SELECT USING (
+  van_id IN (
+    SELECT d.van_id FROM public.drivers d WHERE d.user_id = auth.uid()
+  )
+);
+
+
 -- POLICIES for 'drivers' table
 DROP POLICY IF EXISTS "Allow admin full access on drivers" ON public.drivers;
 CREATE POLICY "Allow admin full access on drivers" ON public.drivers FOR ALL USING (is_admin()) WITH CHECK (is_admin());
@@ -192,6 +226,16 @@ DROP POLICY IF EXISTS "Allow driver to view their own profile" ON public.drivers
 CREATE POLICY "Allow driver to view their own profile" ON public.drivers FOR SELECT USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Allow driver to update their own profile" ON public.drivers;
 CREATE POLICY "Allow driver to update their own profile" ON public.drivers FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Allow students to view their assigned driver" ON public.drivers;
+CREATE POLICY "Allow students to view their assigned driver" ON public.drivers
+FOR SELECT USING (
+  get_my_role() = 'student' AND
+  van_id IS NOT NULL AND van_id IN (
+    SELECT s.van_id FROM public.students s WHERE s.user_id = auth.uid()
+  )
+);
+
 
 -- POLICIES for 'vans' table
 DROP POLICY IF EXISTS "Allow admin full access on vans" ON public.vans;
@@ -221,3 +265,49 @@ DROP POLICY IF EXISTS "Allow admin full access on attendance" ON public.attendan
 CREATE POLICY "Allow admin full access on attendance" ON public.attendance FOR ALL USING (is_admin()) WITH CHECK (is_admin());
 DROP POLICY IF EXISTS "Allow students to view their own attendance" ON public.attendance;
 CREATE POLICY "Allow students to view their own attendance" ON public.attendance FOR SELECT USING (EXISTS (SELECT 1 FROM students WHERE user_id = auth.uid() and id = attendance.student_id));
+
+
+-- 7. ADD VAN_NUMBER and NOTIFICATIONS
+ALTER TABLE IF EXISTS public.drivers
+  ADD COLUMN IF NOT EXISTS van_number text;
+
+ALTER TABLE IF EXISTS public.students
+  ADD COLUMN IF NOT EXISTS van_number text;
+
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  sender_driver_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  van_number text NOT NULL,
+  message text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Optional: index for fast lookups by van_number
+CREATE INDEX IF NOT EXISTS idx_notifications_van_number ON public.notifications (van_number);
+
+-- Enable RLS for notifications table
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+-- Allow authenticated users to read notifications for their van
+DROP POLICY IF EXISTS "Allow users to read van notifications" ON public.notifications;
+CREATE POLICY "Allow users to read van notifications" ON public.notifications
+FOR SELECT USING (
+  (
+    EXISTS (
+      SELECT 1 FROM students WHERE user_id = auth.uid() AND students.van_number = notifications.van_number
+    )
+  ) OR (
+    EXISTS (
+      SELECT 1 FROM drivers WHERE user_id = auth.uid() AND drivers.van_number = notifications.van_number
+    )
+  ) OR is_admin()
+);
+
+-- Allow drivers to send notifications
+DROP POLICY IF EXISTS "Allow drivers to send notifications" ON public.notifications;
+CREATE POLICY "Allow drivers to send notifications" ON public.notifications
+FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM drivers WHERE user_id = auth.uid() AND sender_driver_id = auth.uid()
+  )
+);

@@ -7,6 +7,7 @@ import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import StudentDashboard from './pages/student/StudentDashboard';
 import DriverDashboard from './pages/driver/DriverDashboard';
+import DriverMessagePage from './pages/driver/DriverMessagePage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ProfilePage from './pages/shared/ProfilePage';
 import ComplaintsPage from './pages/shared/ComplaintsPage';
@@ -74,6 +75,7 @@ const AppRoutes: React.FC = () => {
         
         {/* Driver Routes */}
         <Route path="/driver/dashboard" element={<ProtectedRoute allowedRoles={[UserRole.DRIVER]}><DriverDashboard /></ProtectedRoute>} />
+        <Route path="/driver/message" element={<ProtectedRoute allowedRoles={[UserRole.DRIVER]}><DriverMessagePage /></ProtectedRoute>} />
         
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><AdminDashboard /></ProtectedRoute>} />

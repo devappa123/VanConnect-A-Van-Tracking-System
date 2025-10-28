@@ -1,6 +1,5 @@
-
 // FIX: Imported `User` type to resolve 'Cannot find name' errors.
-import { AuthenticatedUser, UserRole, Van, Complaint, ComplaintStatus, Attendance, LocationUpdate, Student, Driver, User, StudentWithUser, DriverWithUser } from '../types';
+import { AuthenticatedUser, UserRole, Van, Complaint, ComplaintStatus, Attendance, LocationUpdate, Student, Driver, User, StudentWithUser, DriverWithUser, Notification } from '../types';
 import { supabase } from './supabaseClient';
 
 export interface LoginCredentials {
@@ -142,6 +141,44 @@ export const logout = async (): Promise<void> => {
 
 // --- DATA FETCHING FUNCTIONS ---
 
+export const getDriverByUserId = async (userId: string): Promise<Driver | null> => {
+  const { data, error } = await supabase
+    .from('drivers')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+      console.error("Error getting driver by user id:", error);
+      throw error;
+  }
+  return data;
+};
+
+export const getStudentsByVanId = async (vanId: string): Promise<StudentWithUser[]> => {
+  const { data, error } = await supabase
+    .from('students')
+    .select('*, user:users(id, name, email)')
+    .eq('van_id', vanId);
+  if (error) {
+      console.error("Error getting students by van id:", error);
+      throw error;
+  }
+  return (data || []) as StudentWithUser[];
+};
+
+export const getStudentsByVanNumber = async (vanNumber: string): Promise<StudentWithUser[]> => {
+  const { data, error } = await supabase
+    .from('students')
+    .select('*, user:users(*)')
+    .eq('van_number', vanNumber);
+  if (error) {
+      console.error("Error getting students by van number:", error);
+      throw error;
+  }
+  return (data || []) as StudentWithUser[];
+};
+
+
 export const getLiveVanLocation = async (vanId: string): Promise<LocationUpdate | null> => {
     const { data, error } = await supabase
         .from('locations')
@@ -201,7 +238,7 @@ export const getAllDrivers = async (): Promise<DriverWithUser[]> => {
 export const getVans = async (): Promise<Van[]> => {
     const { data, error } = await supabase
         .from('vans')
-        .select('*, driver:drivers(user:users(name))');
+        .select('*, driver:drivers!vans_driver_id_fkey(user:users(name))');
     if (error) throw new Error(error.message);
 
     return data.map((v: any) => ({
@@ -213,13 +250,32 @@ export const getVans = async (): Promise<Van[]> => {
 export const getDriverByVanId = async (vanId: string): Promise<(Driver & { name: string, email: string }) | null> => {
     const { data, error } = await supabase
         .from('vans')
-        .select('drivers(*, users(*))')
+        .select('drivers!vans_driver_id_fkey(*, users(*))')
         .eq('id', vanId)
         .single();
-    if (error || !data || !data.drivers) return null;
+    if (error || !data || !('drivers' in data) || !data.drivers) return null;
     const { drivers } = data as any;
     return { ...drivers, ...drivers.users };
 };
+
+export const getNotificationsByVanNumber = async (vanNumber: string): Promise<Notification[]> => {
+    if (!vanNumber) return [];
+    const { data, error } = await supabase
+        .from('notifications')
+        .select(`*, driver:sender_driver_id(name)`)
+        .eq('van_number', vanNumber)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching notifications:', error);
+        throw error;
+    }
+
+    return (data || []).map((n: any) => ({
+        ...n,
+        driver_name: n.driver?.name || 'Driver'
+    }));
+}
 
 export const getAllComplaints = async (): Promise<Complaint[]> => {
     const { data, error } = await supabase
@@ -279,7 +335,19 @@ export const resolveComplaint = async (complaintId: string, reply: string): Prom
     return data;
 };
 
-// --- ADMIN UPDATE FUNCTIONS ---
+// --- ADMIN UPDATE & CRUD FUNCTIONS ---
+
+export const getStudentCountForVan = async (vanId: string): Promise<number> => {
+    const { count, error } = await supabase
+        .from('students')
+        .select('*', { count: 'exact', head: true })
+        .eq('van_id', vanId);
+    if (error) {
+        console.error('Error getting student count for van:', error);
+        throw error;
+    }
+    return count || 0;
+};
 
 export const updateStudentDetails = async (studentId: string, updates: Partial<Student>): Promise<Student> => {
     const { data, error } = await supabase
@@ -301,4 +369,76 @@ export const updateDriverDetails = async (driverId: string, updates: Partial<Dri
         .single();
     if (error) throw new Error(error.message);
     return data;
+};
+
+export const assignVanToDriver = async (driverId: string, vanId: string | null): Promise<void> => {
+    // This function handles the complex logic of re-assigning vans.
+    
+    // 1. Find the van being assigned and its current driver (if any)
+    let oldDriverId: string | null = null;
+    if (vanId) {
+        const { data: vanData, error: vanError } = await supabase
+            .from('vans')
+            .select('driver_id')
+            .eq('id', vanId)
+            .single();
+        if (vanError) throw vanError;
+        oldDriverId = vanData.driver_id;
+    }
+    
+    // 2. Un-assign the van from the old driver
+    if (oldDriverId) {
+        await updateDriverDetails(oldDriverId, { van_id: undefined });
+    }
+
+    // 3. Assign the van to the new driver
+    await updateDriverDetails(driverId, { van_id: vanId || undefined });
+    
+    // 4. Update the van's own driver_id record
+    if (vanId) {
+        await supabase.from('vans').update({ driver_id: driverId }).eq('id', vanId);
+    }
+};
+
+
+export const createVan = async (vanData: Pick<Van, 'van_no' | 'route_name' | 'capacity'>): Promise<Van> => {
+    const { data, error } = await supabase
+        .from('vans')
+        .insert(vanData)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+};
+
+export const updateVan = async (vanId: string, vanData: Partial<Pick<Van, 'van_no' | 'route_name' | 'capacity'>>): Promise<Van> => {
+    const { data, error } = await supabase
+        .from('vans')
+        .update(vanData)
+        .eq('id', vanId)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+};
+
+export const deleteVan = async (vanId: string): Promise<void> => {
+    // When a van is deleted, students/drivers assigned to it should be unassigned (van_id set to null)
+    // This is handled by `ON DELETE SET NULL` in the database schema.
+    const { error } = await supabase.from('vans').delete().eq('id', vanId);
+    if (error) throw error;
+};
+
+export const deleteStudent = async (studentId: string): Promise<void> => {
+    // Note: The schema has ON DELETE CASCADE from students -> users -> auth.users.
+    // Deleting a student profile will delete their user account entirely.
+    const { error } = await supabase.from('students').delete().eq('id', studentId);
+    if (error) throw error;
+};
+
+export const deleteDriver = async (driverId: string): Promise<void> => {
+    // Note: The schema has ON DELETE CASCADE from drivers -> users -> auth.users.
+    // Deleting a driver profile will delete their user account entirely.
+    const { error } = await supabase.from('drivers').delete().eq('id', driverId);
+    if (error) throw error;
 };

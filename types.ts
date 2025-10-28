@@ -1,4 +1,3 @@
-
 export enum UserRole {
   STUDENT = 'student',
   DRIVER = 'driver',
@@ -32,6 +31,7 @@ export interface Student {
   department?: string;
   phone?: string;
   van_id?: string;
+  van_number?: string;
 }
 
 // Driver-specific details from public.drivers
@@ -40,6 +40,7 @@ export interface Driver {
   user_id: string; // fk to users
   phone?: string;
   van_id?: string;
+  van_number?: string;
 }
 
 // The main user object for the app session, combining base User with role-specific details
@@ -93,6 +94,15 @@ export interface Attendance {
     van_id: string;
     date: string;
     status: AttendanceStatus;
+}
+
+export interface Notification {
+  id: string;
+  sender_driver_id: string;
+  van_number: string;
+  message: string;
+  created_at: string;
+  driver_name?: string;
 }
 
 // Types for Google Places Autocomplete API

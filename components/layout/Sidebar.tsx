@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserRole } from '../../types';
-import { LayoutDashboard, User, MessageSquareWarning, LogOut, Car, Users, BarChart } from 'lucide-react';
+import { LayoutDashboard, User, MessageSquareWarning, LogOut, Car, Users, BarChart, MessageSquare } from 'lucide-react';
 
 interface SidebarProps {
   role: UserRole;
@@ -20,6 +19,7 @@ const studentLinks = [
 const driverLinks = [
   { to: '/driver/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/profile', icon: User, label: 'Profile' },
+  { to: '/driver/message', icon: MessageSquare, label: 'Send Message' },
 ];
 
 const adminLinks = [
