@@ -316,11 +316,11 @@ export const submitComplaint = async (data: { description: string, studentId: st
             description: data.description,
             status: ComplaintStatus.PENDING,
         })
-        .select()
-        .single();
+        .select();
     
     if (error) throw new Error(error.message);
-    return newComplaint;
+    if (!newComplaint || newComplaint.length === 0) throw new Error("Failed to create complaint.");
+    return newComplaint[0];
 };
 
 export const resolveComplaint = async (complaintId: string, reply: string): Promise<Complaint> => {
@@ -328,11 +328,11 @@ export const resolveComplaint = async (complaintId: string, reply: string): Prom
         .from('complaints')
         .update({ status: ComplaintStatus.RESOLVED, admin_reply: reply })
         .eq('id', complaintId)
-        .select()
-        .single();
+        .select();
         
     if (error) throw new Error(error.message);
-    return data;
+    if (!data || data.length === 0) throw new Error("Complaint not found or failed to update.");
+    return data[0];
 };
 
 // --- ADMIN UPDATE & CRUD FUNCTIONS ---
@@ -354,10 +354,10 @@ export const updateStudentDetails = async (studentId: string, updates: Partial<S
         .from('students')
         .update(updates)
         .eq('id', studentId)
-        .select()
-        .single();
+        .select();
     if (error) throw new Error(error.message);
-    return data;
+    if (!data || data.length === 0) throw new Error("Student not found or failed to update.");
+    return data[0];
 };
 
 export const updateDriverDetails = async (driverId: string, updates: Partial<Driver>): Promise<Driver> => {
@@ -365,10 +365,10 @@ export const updateDriverDetails = async (driverId: string, updates: Partial<Dri
         .from('drivers')
         .update(updates)
         .eq('id', driverId)
-        .select()
-        .single();
+        .select();
     if (error) throw new Error(error.message);
-    return data;
+    if (!data || data.length === 0) throw new Error("Driver not found or failed to update.");
+    return data[0];
 };
 
 export const assignVanToDriver = async (driverId: string, vanId: string | null): Promise<void> => {
@@ -405,10 +405,10 @@ export const createVan = async (vanData: Pick<Van, 'van_no' | 'route_name' | 'ca
     const { data, error } = await supabase
         .from('vans')
         .insert(vanData)
-        .select()
-        .single();
+        .select();
     if (error) throw error;
-    return data;
+    if (!data || data.length === 0) throw new Error("Failed to create van.");
+    return data[0];
 };
 
 export const updateVan = async (vanId: string, vanData: Partial<Pick<Van, 'van_no' | 'route_name' | 'capacity'>>): Promise<Van> => {
@@ -416,10 +416,10 @@ export const updateVan = async (vanId: string, vanData: Partial<Pick<Van, 'van_n
         .from('vans')
         .update(vanData)
         .eq('id', vanId)
-        .select()
-        .single();
+        .select();
     if (error) throw error;
-    return data;
+    if (!data || data.length === 0) throw new Error("Van not found or failed to update.");
+    return data[0];
 };
 
 export const deleteVan = async (vanId: string): Promise<void> => {

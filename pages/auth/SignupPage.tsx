@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserRole } from '../../types';
-import { Car, Mail, Lock, User as UserIcon, UserCheck, Hash, Phone } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, UserCheck, Hash, Phone, Eye, EyeOff } from 'lucide-react';
 
 const SignupPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -11,6 +11,7 @@ const SignupPage: React.FC = () => {
   const [role, setRole] = useState<UserRole>(UserRole.STUDENT);
   const [usn, setUsn] = useState('');
   const [phone, setPhone] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
@@ -29,167 +30,86 @@ const SignupPage: React.FC = () => {
       setLoading(false);
     }
   };
+  
+  const inputClass = "w-full pl-12 pr-4 py-3 border border-slate-300 dark:border-slate-600 rounded-full bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:shadow-[0_0_6px_#6366F1] transition-all";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center items-center">
-            <Car className="w-12 h-12 text-primary-600" />
-            <h2 className="ml-3 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-            Create Account
-            </h2>
-        </div>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-indigo-600 via-purple-700 to-blue-600">
+      <div className="text-center mb-6">
+        <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">VanConnect</h1>
+        <p className="mt-2 text-sm text-white/70">East Point College of Engineering and Technology (EPCET)</p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow-xl sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {error && <p className="text-center text-sm text-red-500">{error}</p>}
+      <div className="w-full max-w-md animate-fade-in-up">
+        <div className="bg-white/95 dark:bg-slate-800/90 dark:backdrop-blur-sm p-8 rounded-3xl shadow-2xl">
+          <h2 className="text-center text-2xl font-semibold text-slate-800 dark:text-white mb-6">
+            Join VanConnect – EPCET
+          </h2>
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {error && <p className="text-center text-sm text-red-500 bg-red-100 dark:bg-red-900/50 p-3 rounded-lg">{error}</p>}
             
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Full Name
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <UserIcon className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="appearance-none block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-                />
-              </div>
+            <div className="relative">
+                <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <input type="text" placeholder="Full Name" required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Email address
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-                />
-              </div>
+            <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <input type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Password
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-                />
-              </div>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-12 pr-12 py-3 border border-slate-300 dark:border-slate-600 rounded-full bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:shadow-[0_0_6px_#6366F1] transition-all"
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                {showPassword ? <EyeOff className="h-5 w-5 transition-opacity" /> : <Eye className="h-5 w-5 transition-opacity" />}
+              </button>
             </div>
             
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Sign up as
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <UserCheck className="h-5 w-5 text-gray-400" />
-                </div>
-                <select
-                  id="role"
-                  name="role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as UserRole)}
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-                >
-                  <option value={UserRole.STUDENT}>Student</option>
-                  <option value={UserRole.DRIVER}>Driver</option>
+            <div className="relative">
+                <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <select value={role} onChange={(e) => setRole(e.target.value as UserRole)} className={`${inputClass} appearance-none`}>
+                    <option value={UserRole.STUDENT}>Sign up as Student</option>
+                    <option value={UserRole.DRIVER}>Sign up as Driver</option>
                 </select>
-              </div>
             </div>
             
             {role === UserRole.STUDENT && (
-               <div>
-                  <label htmlFor="usn" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    USN (University Seat Number)
-                  </label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Hash className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      id="usn"
-                      name="usn"
-                      type="text"
-                      required
-                      value={usn}
-                      onChange={(e) => setUsn(e.target.value)}
-                      className="appearance-none block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-                    />
-                  </div>
+               <div className="relative">
+                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                    <input type="text" placeholder="USN (University Seat No.)" required value={usn} onChange={(e) => setUsn(e.target.value)} className={inputClass} />
                 </div>
             )}
 
-             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Phone Number
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Phone className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="appearance-none block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-                />
-              </div>
+            <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <input type="tel" placeholder="Phone Number" required value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
             </div>
 
             <div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-primary-300"
+                className="w-full flex justify-center mt-2 py-3 px-4 border border-transparent rounded-full shadow-lg text-md font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 transform hover:scale-105 active:scale-95 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/40"
               >
-                {loading ? 'Creating account...' : 'Sign up'}
+                {loading ? 'Creating Account...' : 'Sign Up'}
               </button>
             </div>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-                Already have an account?{' '}
-                <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500">
-                    Sign in
-                </Link>
-            </p>
-          </div>
         </div>
+      </div>
+       <div className="mt-8 text-center">
+         <p className="text-sm text-white/80 mb-2">Already a member?</p>
+         <Link to="/login" className="inline-block px-8 py-3 border border-white/50 text-white font-semibold rounded-full hover:bg-white/10 transition-colors duration-200">
+            Login Now
+        </Link>
       </div>
     </div>
   );

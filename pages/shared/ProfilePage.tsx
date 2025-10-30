@@ -30,30 +30,35 @@ const ProfilePage: React.FC = () => {
     setIsEditing(false);
   };
 
+  const labelStyle = "text-sm font-medium text-slate-500 dark:text-slate-400";
+  const valueStyle = "mt-1 text-lg text-slate-800 dark:text-slate-100";
+  const inputStyle = `mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg`;
+
+
   const renderRoleSpecificFields = () => {
     switch(user.role) {
       case UserRole.STUDENT:
         return (
           <>
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">USN</label>
-              <input type="text" value={usn} onChange={(e) => setUsn(e.target.value)} disabled={!isEditing} className="mt-1 block w-full input-style" />
+              <label className={labelStyle}>USN</label>
+              {isEditing ? <input type="text" value={usn} onChange={(e) => setUsn(e.target.value)} className={inputStyle} /> : <p className={valueStyle}>{usn || 'Not set'}</p>}
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Department</label>
-              <input type="text" value={department} onChange={(e) => setDepartment(e.target.value)} disabled={!isEditing} className="mt-1 block w-full input-style" />
+              <label className={labelStyle}>Department</label>
+              {isEditing ? <input type="text" value={department} onChange={(e) => setDepartment(e.target.value)} className={inputStyle} /> : <p className={valueStyle}>{department || 'Not set'}</p>}
             </div>
              <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone Number</label>
-              <input type="text" value={studentPhone} onChange={(e) => setStudentPhone(e.target.value)} disabled={!isEditing} className="mt-1 block w-full input-style" />
+              <label className={labelStyle}>Phone Number</label>
+              {isEditing ? <input type="text" value={studentPhone} onChange={(e) => setStudentPhone(e.target.value)} className={inputStyle} /> : <p className={valueStyle}>{studentPhone || 'Not set'}</p>}
             </div>
           </>
         );
       case UserRole.DRIVER:
         return (
           <div>
-            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone Number</label>
-            <input type="text" value={driverPhone} onChange={(e) => setDriverPhone(e.target.value)} disabled={!isEditing} className="mt-1 block w-full input-style" />
+            <label className={labelStyle}>Phone Number</label>
+             {isEditing ? <input type="text" value={driverPhone} onChange={(e) => setDriverPhone(e.target.value)} className={inputStyle} /> : <p className={valueStyle}>{driverPhone || 'Not set'}</p>}
           </div>
         );
       default:
@@ -68,40 +73,38 @@ const ProfilePage: React.FC = () => {
           <div className="flex flex-col md:flex-row items-center md:items-start">
             <div className="relative mb-4 md:mb-0 md:mr-8">
               <img 
-                className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg" 
+                className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-lg" 
                 src={user.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`} 
                 alt="Profile" 
               />
-              <label htmlFor="avatar-upload" className="absolute bottom-1 right-1 bg-primary-600 p-2 rounded-full text-white cursor-pointer hover:bg-primary-700 transition-colors">
+              <label htmlFor="avatar-upload" className="absolute bottom-1 right-1 bg-blue-600 p-2 rounded-full text-white cursor-pointer hover:bg-blue-700 transition-colors">
                 <Camera className="w-4 h-4" />
                 <input id="avatar-upload" type="file" className="hidden" />
               </label>
             </div>
             <div className="flex-1 w-full">
               <div className="flex justify-between items-center mb-4">
-                 <h2 className="text-2xl font-bold">{user.name}</h2>
+                 <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{user.name}</h2>
                  <button 
                     onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
                 >
                   {isEditing ? 'Save Changes' : 'Edit Profile'}
                 </button>
               </div>
 
               <div className="space-y-4">
-                <style>{`.input-style { all: unset; box-sizing: border-box; } .input-style:not(:disabled) { padding: 0.5rem 0.75rem; border: 1px solid; border-radius: 0.375rem; } .input-style:disabled { padding-top: 0.25rem; font-size: 1.125rem; line-height: 1.75rem; }`}</style>
                 <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Full Name</label>
-                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={!isEditing}
-                    className="mt-1 block w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-md shadow-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                  <label className={labelStyle}>Full Name</label>
+                  {isEditing ? <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputStyle} /> : <p className={valueStyle}>{name}</p>}
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Address</label>
-                  <p className="mt-1 text-lg">{user.email}</p>
+                  <label className={labelStyle}>Email Address</label>
+                  <p className={valueStyle}>{user.email}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Role</label>
-                  <p className="mt-1 text-lg capitalize">{user.role}</p>
+                  <label className={labelStyle}>Role</label>
+                  <p className={`${valueStyle} capitalize`}>{user.role}</p>
                 </div>
                 {renderRoleSpecificFields()}
               </div>

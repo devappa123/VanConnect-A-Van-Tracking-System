@@ -31,7 +31,7 @@ const StudentDashboard: React.FC = () => {
     );
   }, []);
 
-  // Effect for fetching van data, location, and attendance
+  // Effect for fetching initial dashboard data
   useEffect(() => {
     const fetchData = async () => {
       if (!user || !user.student) return;
@@ -46,7 +46,6 @@ const StudentDashboard: React.FC = () => {
       }
 
       try {
-        // FIX: Replaced dynamic promise array with explicit promises to ensure type safety with Promise.all.
         const locationPromise = getLiveVanLocation(vanId);
         const driverPromise = getDriverByVanId(vanId);
         const attendancePromise = getStudentAttendance(user.student.id);
@@ -79,15 +78,6 @@ const StudentDashboard: React.FC = () => {
     };
 
     fetchData();
-
-    // Set up polling for live location
-    const interval = setInterval(() => {
-        if (vanId) {
-            getLiveVanLocation(vanId).then(setVanLocation).catch(console.error);
-        }
-    }, 10000);
-
-    return () => clearInterval(interval);
   }, [user, vanId, vanNumber]);
 
   // Effect for real-time notifications
@@ -105,6 +95,33 @@ const StudentDashboard: React.FC = () => {
     }
   }, [vanNumber]);
   
+  // Effect for real-time van location
+  useEffect(() => {
+    if (!vanId) return;
+
+    const locationChannel = supabase
+      .channel(`van-location-updates-${vanId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'locations',
+          filter: `van_id=eq.${vanId}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            setVanLocation(payload.new as LocationUpdate);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(locationChannel);
+    };
+  }, [vanId]);
+  
 
   const isLoading = loading || !userLocation;
 
@@ -113,24 +130,22 @@ const StudentDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
         {/* Map View */}
         <div className="lg:col-span-2 h-[60vh] lg:h-full">
-            <Card className="h-full w-full flex flex-col" title="Live Van Tracking">
+            <Card className="h-full w-full flex flex-col" title="Live Van Tracking" bodyClassName="flex-grow">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
-                        <div className="w-8 h-8 border-2 border-t-primary-500 border-gray-200 rounded-full animate-spin"></div>
-                        <p className="ml-2">Loading map and location...</p>
+                        <div className="w-8 h-8 border-2 border-t-blue-500 border-slate-200 rounded-full animate-spin"></div>
+                        <p className="ml-2 text-slate-600">Loading map and location...</p>
                     </div>
                 ) : (
-                  <div className="flex flex-col h-full">
-                    <div className="flex-grow">
-                        {error && <div className="text-center text-red-500 p-4">{error}</div>}
-                        {!error && userLocation && (
-                          <MapView 
-                              userPosition={userLocation}
-                              vanPosition={vanLocation ? [vanLocation.latitude, vanLocation.longitude] : undefined}
-                          />
-                        )}
-                    </div>
-                  </div>
+                  <>
+                    {error && <div className="text-center text-red-500 p-4">{error}</div>}
+                    {!error && userLocation && (
+                      <MapView 
+                          userPosition={userLocation}
+                          vanPosition={vanLocation ? [vanLocation.latitude, vanLocation.longitude] : undefined}
+                      />
+                    )}
+                  </>
                 )}
             </Card>
         </div>
@@ -142,52 +157,52 @@ const StudentDashboard: React.FC = () => {
                 <div className="flex items-center space-x-4">
                     <img className="w-16 h-16 rounded-full" src={`https://i.pravatar.cc/150?u=${driver.user_id}`} alt="Driver"/>
                     <div>
-                        <h4 className="text-lg font-bold text-gray-800 dark:text-gray-100">{driver.name}</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Phone: {driver.phone || 'N/A'}</p>
+                        <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100">{driver.name}</h4>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Phone: {driver.phone || 'N/A'}</p>
                     </div>
                 </div>
                 <div className="mt-6 flex space-x-4">
-                    <a href={`tel:${driver.phone}`} className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
+                    <a href={`tel:${driver.phone}`} className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-green-600 hover:bg-green-700 transition-colors">
                         <Phone className="w-5 h-5 mr-2"/> Call Driver
                     </a>
-                    <a href={`mailto:${driver.email}`} className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                    <a href={`mailto:${driver.email}`} className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-slate-300 dark:border-slate-600 text-sm font-medium rounded-lg text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
                         <MessageSquare className="w-5 h-5 mr-2"/> Message
                     </a>
                 </div>
                 </>
-            ) : <p className="text-gray-500 dark:text-gray-400">Driver not assigned.</p>}
+            ) : <p className="text-slate-500 dark:text-slate-400">Driver not assigned.</p>}
           </Card>
            <Card title="Notifications">
              <div className="space-y-3 max-h-48 overflow-y-auto">
                 {notifications.length > 0 ? notifications.map(notif => (
-                  <div key={notif.id} className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                  <div key={notif.id} className="p-3 bg-blue-50 dark:bg-slate-700 rounded-lg">
                       <div className="flex items-start">
                           <Bell className="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" />
                           <div>
-                            <p className="text-sm">{notif.message}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(notif.created_at).toLocaleString()}</p>
+                            <p className="text-sm text-slate-800 dark:text-slate-200">{notif.message}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{new Date(notif.created_at).toLocaleString()}</p>
                           </div>
                       </div>
                   </div>
                 )) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400">No notifications from your driver.</p>
+                  <p className="text-center text-slate-500 dark:text-slate-400">No notifications from your driver.</p>
                 )}
             </div>
           </Card>
           <Card title="My Attendance">
              <div className="space-y-3 max-h-48 overflow-y-auto">
                 {attendance.length > 0 ? attendance.map(att => (
-                  <div key={att.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <div key={att.id} className="flex items-center justify-between p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
                     <div className="flex items-center">
-                      <Calendar className="w-5 h-5 text-primary-500 mr-3" />
-                      <p className="font-medium">{new Date(att.date).toLocaleDateString()}</p>
+                      <Calendar className="w-5 h-5 text-blue-500 mr-3" />
+                      <p className="font-medium text-slate-700 dark:text-slate-200">{new Date(att.date).toLocaleDateString()}</p>
                     </div>
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${att.status === 'Present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                       {att.status}
                     </span>
                   </div>
                 )) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400">No attendance records found.</p>
+                  <p className="text-center text-slate-500 dark:text-slate-400">No attendance records found.</p>
                 )}
             </div>
           </Card>

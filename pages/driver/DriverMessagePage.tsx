@@ -77,7 +77,7 @@ const DriverMessagePage: React.FC = () => {
       <div className="max-w-2xl mx-auto">
         <Card title="Send a Message to Your Van">
           <div className="space-y-4">
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-slate-600 dark:text-slate-400">
               Use this form to send a short message to all students assigned to your van (e.g., "Running 10 minutes late due to traffic").
             </p>
             <div>
@@ -85,7 +85,7 @@ const DriverMessagePage: React.FC = () => {
               <textarea
                 id="message-textarea"
                 rows={5}
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type your message here..."
@@ -97,7 +97,7 @@ const DriverMessagePage: React.FC = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!vanNumber || isSending || !message.trim()}
-                className="inline-flex items-center justify-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-6 py-2 border border-transparent text-sm font-semibold rounded-xl shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 <Send className="w-4 h-4 mr-2" />
                 {isSending ? 'Sending...' : 'Send Message'}

@@ -63,14 +63,14 @@ const StudentComplaintsView: React.FC = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {error && <p className="text-sm text-red-500">{error}</p>}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Driver</label>
-                        <p className="mt-1 text-gray-900 dark:text-gray-100">{driver?.name || 'No driver assigned to your van.'}</p>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Driver</label>
+                        <p className="mt-1 text-slate-900 dark:text-slate-100">{driver?.name || 'No driver assigned to your van.'}</p>
                     </div>
                     <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-                        <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} required className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                        <label htmlFor="description" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Description</label>
+                        <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} required className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                     </div>
-                    <button type="submit" disabled={!driver} className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-primary-300">
+                    <button type="submit" disabled={!driver} className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200">
                         Submit Complaint
                     </button>
                 </form>
@@ -78,12 +78,12 @@ const StudentComplaintsView: React.FC = () => {
             <Card title="Your Complaint History">
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                     {complaints.map(c => (
-                        <div key={c.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div key={c.id} className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h4 className="font-semibold">Complaint against: {c.driver_name}</h4>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{c.description}</p>
-                                    {c.admin_reply && <p className="text-sm text-green-700 dark:text-green-400 mt-2 p-2 bg-green-50 dark:bg-green-900/50 rounded-md"><b>Admin Reply:</b> {c.admin_reply}</p>}
+                                    <h4 className="font-semibold text-slate-800 dark:text-slate-100">Complaint against: {c.driver_name}</h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{c.description}</p>
+                                    {c.admin_reply && <p className="text-sm text-green-800 dark:text-green-300 mt-2 p-2 bg-green-50 dark:bg-green-900/50 rounded-md"><b>Admin Reply:</b> {c.admin_reply}</p>}
                                 </div>
                                 <span className={`flex-shrink-0 ml-4 px-2 py-1 text-xs font-semibold rounded-full ${c.status === ComplaintStatus.PENDING ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'}`}>
                                     {c.status}
@@ -119,22 +119,22 @@ const AdminComplaintsView: React.FC = () => {
          <>
          <Card title="All User Complaints">
             <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
+                <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                    <thead className="bg-slate-100 dark:bg-slate-700">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Student</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Driver</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Action</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Student</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Driver</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Description</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                         {complaints.map(c => (
                             <tr key={c.id}>
-                                <td className="px-6 py-4 whitespace-nowrap">{c.student_name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">{c.driver_name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap max-w-sm truncate">{c.description}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-200">{c.student_name}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-200">{c.driver_name}</td>
+                                <td className="px-6 py-4 whitespace-nowrap max-w-sm truncate text-sm text-slate-700 dark:text-slate-200">{c.description}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.status === ComplaintStatus.PENDING ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
                                         {c.status}
@@ -142,7 +142,7 @@ const AdminComplaintsView: React.FC = () => {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     {c.status === ComplaintStatus.PENDING && (
-                                        <button onClick={() => setSelectedComplaint(c)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">Resolve</button>
+                                        <button onClick={() => setSelectedComplaint(c)} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Resolve</button>
                                     )}
                                 </td>
                             </tr>
@@ -152,14 +152,14 @@ const AdminComplaintsView: React.FC = () => {
             </div>
         </Card>
         {selectedComplaint && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <Card title={`Reply to ${selectedComplaint.student_name}`} className="w-full max-w-lg">
-                     <button onClick={() => setSelectedComplaint(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                     <button onClick={() => setSelectedComplaint(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                         <X size={24} />
                     </button>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2"><strong>Complaint:</strong> {selectedComplaint.description}</p>
-                    <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4} placeholder="Enter your reply..." required className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
-                    <button onClick={handleResolve} className="mt-4 w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-2"><strong>Complaint:</strong> {selectedComplaint.description}</p>
+                    <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4} placeholder="Enter your reply..." required className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    <button onClick={handleResolve} className="mt-4 w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
                         Mark as Resolved & Send Reply
                     </button>
                 </Card>

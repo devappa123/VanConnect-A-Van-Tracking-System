@@ -115,7 +115,7 @@ const DriverDashboard: React.FC = () => {
   if (loading || !user) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="w-16 h-16 border-4 border-t-4 border-t-primary-600 border-gray-200 rounded-full animate-spin"></div>
+        <div className="w-16 h-16 border-4 border-t-4 border-t-blue-600 border-slate-200 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -127,23 +127,23 @@ const DriverDashboard: React.FC = () => {
            <Card>
             <div className="flex flex-col items-center justify-between text-center">
               <div>
-                <h3 className="text-xl font-bold">Trip Status: {isTripActive ? 'Active' : 'Inactive'}</h3>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">Trip Status: {isTripActive ? 'Active' : 'Inactive'}</h3>
                  {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
                   {isTripActive ? 'Your location is being shared with students.' : 'Start the trip to begin sharing your location.'}
                 </p>
               </div>
               <button
                 onClick={handleTripToggle}
                 disabled={!vanId}
-                className={`mt-4 w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
+                className={`mt-4 w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-xl shadow-sm text-white transition-all duration-200 ${
                   isTripActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
-                } disabled:bg-gray-400 disabled:cursor-not-allowed`}
+                } disabled:bg-slate-400 disabled:cursor-not-allowed`}
               >
                 {isTripActive ? <StopCircle className="w-5 h-5 mr-2"/> : <PlayCircle className="w-5 h-5 mr-2"/>}
                 {isTripActive ? 'End Trip' : 'Start Trip'}
               </button>
-              <Link to="/driver/message" className="mt-3 inline-block text-sm text-primary-600 hover:text-primary-500">
+              <Link to="/driver/message" className="mt-3 inline-block text-sm text-blue-600 hover:text-blue-500 font-medium">
                 Send late message
               </Link>
             </div>
@@ -152,24 +152,24 @@ const DriverDashboard: React.FC = () => {
           <Card title="Assigned Students">
             <div className="space-y-3 max-h-80 overflow-y-auto">
                 {students.length > 0 ? students.map((student) => (
-                    <div key={student.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <div key={student.id} className="flex items-center justify-between p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
                         <div>
-                            <p className="font-medium text-sm">{student.user?.name || 'Unnamed Student'}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{student.usn || 'No USN'}</p>
+                            <p className="font-medium text-sm text-slate-800 dark:text-slate-200">{student.user?.name || 'Unnamed Student'}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{student.usn || 'No USN'}</p>
                         </div>
-                        <a href={`tel:${student.phone}`} className="p-2 rounded-full text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/50">
+                        <a href={`tel:${student.phone}`} className="p-2 rounded-full text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/50 transition-colors">
                             <Phone className="w-4 h-4"/>
                         </a>
                     </div>
                 )) : (
-                    <p className="text-center text-sm text-gray-500 dark:text-gray-400">No students assigned to your van.</p>
+                    <p className="text-center text-sm text-slate-500 dark:text-slate-400">No students assigned to your van.</p>
                 )}
             </div>
           </Card>
         </div>
 
         <div className="lg:col-span-2 h-[70vh] lg:h-full">
-          <Card className="h-full w-full" title="Your Location">
+          <Card className="h-full w-full flex flex-col" title="Your Location" bodyClassName="flex-grow">
               <MapView userPosition={location} />
           </Card>
         </div>
