@@ -64,7 +64,7 @@ const DriverMessagePage: React.FC = () => {
   };
 
   if (loading) {
-     return <div className="h-screen flex items-center justify-center">Loading...</div>;
+     return <div className="h-screen flex items-center justify-center bg-lightbg dark:bg-darkbg">Loading...</div>;
   }
   
   if (!user) {
@@ -74,7 +74,7 @@ const DriverMessagePage: React.FC = () => {
 
   return (
     <MainLayout role={UserRole.DRIVER} title="Send Message">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto animate-fade-in-up">
         <Card title="Send a Message to Your Van">
           <div className="space-y-4">
             <p className="text-slate-600 dark:text-slate-400">
@@ -85,7 +85,7 @@ const DriverMessagePage: React.FC = () => {
               <textarea
                 id="message-textarea"
                 rows={5}
-                className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
+                className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-slate-700 dark:text-white"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type your message here..."
@@ -97,7 +97,7 @@ const DriverMessagePage: React.FC = () => {
               <button
                 onClick={handleSendMessage}
                 disabled={!vanNumber || isSending || !message.trim()}
-                className="inline-flex items-center justify-center px-6 py-2 border border-transparent text-sm font-semibold rounded-xl shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="inline-flex items-center justify-center px-6 py-2 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-primary to-secondary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
               >
                 <Send className="w-4 h-4 mr-2" />
                 {isSending ? 'Sending...' : 'Send Message'}

@@ -7,7 +7,7 @@
     <title>Van Connect</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Leaflet CSS for map styling -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -16,23 +16,11 @@
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #6366f1, #9333ea);
+        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
         border-radius: 10px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #4f46e5, #7e22ce);
-      }
-
-      /* Text Gradient Utility */
-      .text-gradient {
-        background: linear-gradient(135deg, #1e40af, #6366f1, #9333ea);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-      .dark .text-gradient {
-        background: linear-gradient(135deg, #60a5fa, #a855f7);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
       }
     </style>
     <script>
@@ -41,67 +29,43 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
+              sans: ['Poppins', 'sans-serif'],
+            },
+            borderRadius: {
+              '2xl': '1rem',
+            },
+            colors: {
+              darkbg: '#0F172A',
+              darkcard: '#1E293B',
+              lightbg: '#F8FAFC',
+              lightcard: '#FFFFFF',
+              primary: '#3B82F6',
+              secondary: '#8B5CF6',
+              slate: {
+                50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0',
+                300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b',
+                600: '#475569', 700: '#334155', 800: '#1e293b',
+                900: '#0f172a',
+              },
+            },
+            boxShadow: {
+              light: '0 2px 10px rgba(0,0,0,0.1)',
+              dark: '0 4px 15px rgba(0,0,0,0.3)',
             },
             keyframes: {
               fadeInUp: {
                 '0%': { opacity: '0', transform: 'translateY(20px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
               },
+              glowPulse: {
+                '0%, 100%': { boxShadow: '0 0 5px -2px #8B5CF6' },
+                '50%': { boxShadow: '0 0 10px 0px #8B5CF6' }
+              }
             },
             animation: {
-              'fade-in-up': 'fadeInUp 0.6s ease-in-out',
+              'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+              'glow-pulse': 'glowPulse 2.5s ease-in-out infinite',
             },
-            colors: {
-              slate: {
-                50: '#f8fafc',
-                100: '#f1f5f9',
-                200: '#e2e8f0',
-                300: '#cbd5e1',
-                400: '#94a3b8',
-                500: '#64748b',
-                600: '#475569',
-                700: '#334155',
-                800: '#1e293b',
-                900: '#0f172a',
-              },
-              blue: {
-                50: '#eff6ff',
-                100: '#dbeafe',
-                200: '#bfdbfe',
-                300: '#93c5fd',
-                400: '#60a5fa',
-                500: '#3b82f6',
-                600: '#2563eb',
-                700: '#1d4ed8',
-                800: '#1e40af',
-                900: '#1e3a8a',
-              },
-              indigo: {
-                500: '#6366f1',
-                600: '#4f46e5',
-                700: '#4338ca',
-              },
-              purple: {
-                600: '#9333ea',
-                700: '#7e22ce',
-              },
-              amber: {
-                50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d',
-                400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309',
-                800: '#92400e', 900: '#78350f',
-              },
-              green: {
-                50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac',
-                400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d',
-                800: '#166534', 900: '#14532d',
-              },
-              red: {
-                50: '#fef2f2', 100: '#fee2e2', 200: '#fecaca', 300: '#fca5a5',
-                400: '#f87171', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c',
-                800: '#991b1b', 900: '#7f1d1d',
-              }
-            }
           }
         }
       }

@@ -31,17 +31,17 @@ const SignupPage: React.FC = () => {
     }
   };
   
-  const inputClass = "w-full pl-12 pr-4 py-3 border border-slate-300 dark:border-slate-600 rounded-full bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:shadow-[0_0_6px_#6366F1] transition-all";
+  const inputClass = "w-full pl-12 pr-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700/50 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all";
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-indigo-600 via-purple-700 to-blue-600">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-primary via-secondary to-blue-600">
       <div className="text-center mb-6">
         <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">VanConnect</h1>
         <p className="mt-2 text-sm text-white/70">East Point College of Engineering and Technology (EPCET)</p>
       </div>
 
       <div className="w-full max-w-md animate-fade-in-up">
-        <div className="bg-white/95 dark:bg-slate-800/90 dark:backdrop-blur-sm p-8 rounded-3xl shadow-2xl">
+        <div className="bg-lightcard/95 dark:bg-darkcard/90 backdrop-blur-sm p-8 rounded-2xl shadow-dark">
           <h2 className="text-center text-2xl font-semibold text-slate-800 dark:text-white mb-6">
             Join VanConnect – EPCET
           </h2>
@@ -66,7 +66,7 @@ const SignupPage: React.FC = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-12 py-3 border border-slate-300 dark:border-slate-600 rounded-full bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:shadow-[0_0_6px_#6366F1] transition-all"
+                className="w-full pl-12 pr-12 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700/50 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all"
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                 {showPassword ? <EyeOff className="h-5 w-5 transition-opacity" /> : <Eye className="h-5 w-5 transition-opacity" />}
@@ -97,7 +97,7 @@ const SignupPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center mt-2 py-3 px-4 border border-transparent rounded-full shadow-lg text-md font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 transform hover:scale-105 active:scale-95 transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/40"
+                className="w-full flex justify-center mt-2 py-3 px-4 border border-transparent rounded-lg shadow-lg text-md font-semibold text-white bg-gradient-to-r from-primary to-secondary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:opacity-70 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-in-out hover:shadow-dark animate-glow-pulse"
               >
                 {loading ? 'Creating Account...' : 'Sign Up'}
               </button>
@@ -107,7 +107,7 @@ const SignupPage: React.FC = () => {
       </div>
        <div className="mt-8 text-center">
          <p className="text-sm text-white/80 mb-2">Already a member?</p>
-         <Link to="/login" className="inline-block px-8 py-3 border border-white/50 text-white font-semibold rounded-full hover:bg-white/10 transition-colors duration-200">
+         <Link to="/login" className="inline-block px-8 py-3 border border-white/50 text-white font-semibold rounded-lg hover:bg-white/10 transition-colors duration-200">
             Login Now
         </Link>
       </div>

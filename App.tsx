@@ -36,8 +36,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-slate-900">
-                <div className="w-16 h-16 border-4 border-t-4 border-t-blue-600 border-slate-200 rounded-full animate-spin"></div>
+            <div className="flex items-center justify-center h-screen bg-lightbg dark:bg-darkbg">
+                <div className="w-16 h-16 border-4 border-t-primary border-slate-200 dark:border-slate-700 rounded-full animate-spin"></div>
             </div>
         );
     }

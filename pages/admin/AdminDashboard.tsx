@@ -142,7 +142,7 @@ const AdminDashboard: React.FC = () => {
   
   const renderContent = () => {
     if (loading) {
-      return <div className="flex justify-center items-center p-8"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+      return <div className="flex justify-center items-center p-8"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
     }
 
     switch(activeTab) {
@@ -189,20 +189,20 @@ const OverviewTab: React.FC<{stats: {vans: number, drivers: number, students: nu
     </div>
 );
 const VansTab: React.FC<{ vans: Van[], onEdit: (van: Van) => void, onDelete: (van: Van) => void, onAdd: () => void }> = ({ vans, onEdit, onDelete, onAdd }) => (
-    <Card>
-         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 px-4 pt-4 gap-3">
+    <Card bodyClassName="p-0">
+         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 px-6 pt-4 gap-3">
             <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Manage College Vans</h3>
-            <button onClick={onAdd} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 transform hover:scale-105">
+            <button onClick={onAdd} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-lg shadow-sm text-white bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all duration-300 transform hover:scale-105">
                 <PlusCircle className="w-5 h-5 mr-2" /> Add Van
             </button>
         </div>
         <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                <thead className="bg-slate-50 dark:bg-slate-900/50">
+            <table className="min-w-full">
+                <thead className="bg-slate-50 dark:bg-darkbg">
                     <tr><th className={thCell}>Van No</th><th className={thCell}>Route</th><th className={thCell}>Driver</th><th className={thCell}>Capacity</th><th className={`${thCell} text-right`}>Actions</th></tr>
                 </thead>
-                <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-                    {vans.map((van) => (<tr key={van.id} className="transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+                    {vans.map((van) => (<tr key={van.id} className="transition-colors hover:bg-slate-100/50 dark:hover:bg-slate-700/50">
                         <td className={`${tdCell} font-medium text-slate-900 dark:text-white`}>{van.van_no}</td><td className={tdCell}>{van.route_name}</td><td className={tdCell}>{van.driver_name || <span className="text-slate-500 italic">Unassigned</span>}</td><td className={tdCell}>{van.capacity}</td>
                         <td className={`${tdCell} text-right space-x-2`}>
                           <button onClick={() => onEdit(van)} className="p-2 rounded-full text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-500/10 transition-colors" aria-label="Edit"><Edit size={16}/></button>
@@ -215,14 +215,14 @@ const VansTab: React.FC<{ vans: Van[], onEdit: (van: Van) => void, onDelete: (va
     </Card>
 );
 const DriversTab: React.FC<{ drivers: DriverWithUser[], vans: Van[], onEdit: (driver: DriverWithUser) => void, onDelete: (driver: DriverWithUser) => void }> = ({ drivers, vans, onEdit, onDelete }) => (
-    <Card title="Manage Drivers">
+    <Card title="Manage Drivers" bodyClassName="p-0">
         <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                 <thead className="bg-slate-50 dark:bg-slate-900/50"><tr><th className={thCell}>Name</th><th className={thCell}>Email</th><th className={thCell}>Phone</th><th className={thCell}>Assigned Van</th><th className={`${thCell} text-right`}>Actions</th></tr></thead>
-                <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+            <table className="min-w-full">
+                 <thead className="bg-slate-50 dark:bg-darkbg"><tr><th className={thCell}>Name</th><th className={thCell}>Email</th><th className={thCell}>Phone</th><th className={thCell}>Assigned Van</th><th className={`${thCell} text-right`}>Actions</th></tr></thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-white/10">
                     {drivers.map(driver => {
                         const assignedVan = vans.find(v => v.id === driver.van_id);
-                        return (<tr key={driver.id} className="transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                        return (<tr key={driver.id} className="transition-colors hover:bg-slate-100/50 dark:hover:bg-slate-700/50">
                             <td className={tdCell}>{driver.user?.name || 'N/A'}</td><td className={tdCell}>{driver.user?.email || 'N/A'}</td><td className={tdCell}>{driver.phone || 'N/A'}</td><td className={tdCell}>{assignedVan?.van_no || <span className="text-slate-500 italic">Not Assigned</span>}</td>
                             <td className={`${tdCell} text-right space-x-2`}>
                               <button onClick={() => onEdit(driver)} className="p-2 rounded-full text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-500/10 transition-colors" aria-label="Edit"><Edit size={16}/></button>
@@ -236,14 +236,14 @@ const DriversTab: React.FC<{ drivers: DriverWithUser[], vans: Van[], onEdit: (dr
     </Card>
 );
 const StudentsTab: React.FC<{ students: StudentWithUser[], vans: Van[], onEdit: (student: StudentWithUser) => void, onDelete: (student: StudentWithUser) => void }> = ({ students, vans, onEdit, onDelete }) => (
-    <Card title="Manage Students">
+    <Card title="Manage Students" bodyClassName="p-0">
         <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                <thead className="bg-slate-50 dark:bg-slate-900/50"><tr><th className={thCell}>Name</th><th className={thCell}>USN</th><th className={thCell}>Phone</th><th className={thCell}>Assigned Van</th><th className={`${thCell} text-right`}>Actions</th></tr></thead>
-                <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+            <table className="min-w-full">
+                <thead className="bg-slate-50 dark:bg-darkbg"><tr><th className={thCell}>Name</th><th className={thCell}>USN</th><th className={thCell}>Phone</th><th className={thCell}>Assigned Van</th><th className={`${thCell} text-right`}>Actions</th></tr></thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-white/10">
                     {students.map(student => {
                         const assignedVan = vans.find(v => v.id === student.van_id);
-                        return (<tr key={student.id} className="transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                        return (<tr key={student.id} className="transition-colors hover:bg-slate-100/50 dark:hover:bg-slate-700/50">
                             <td className={tdCell}>{student.user?.name || 'N/A'}</td><td className={tdCell}>{student.usn || 'N/A'}</td><td className={tdCell}>{student.phone || 'N/A'}</td><td className={tdCell}>{assignedVan?.van_no || <span className="text-slate-500 italic">Not Assigned</span>}</td>
                             <td className={`${tdCell} text-right space-x-2`}>
                               <button onClick={() => onEdit(student)} className="p-2 rounded-full text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-500/10 transition-colors" aria-label="Edit"><Edit size={16}/></button>
@@ -257,14 +257,14 @@ const StudentsTab: React.FC<{ students: StudentWithUser[], vans: Van[], onEdit: 
     </Card>
 );
 const ComplaintsTab: React.FC<{ complaints: Complaint[] }> = ({ complaints }) => (
-     <Card title="All User Complaints">
+     <Card title="All User Complaints" bodyClassName="p-0">
         <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                <thead className="bg-slate-50 dark:bg-slate-900/50"><tr><th className={thCell}>Student</th><th className={thCell}>Driver</th><th className={thCell}>Description</th><th className={thCell}>Status</th><th className={`${thCell} text-right`}>Date</th></tr></thead>
-                <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-                    {complaints.map(c => (<tr key={c.id} className="transition-colors hover:bg-slate-100 dark:hover:bg-slate-700/50">
+            <table className="min-w-full">
+                <thead className="bg-slate-50 dark:bg-darkbg"><tr><th className={thCell}>Student</th><th className={thCell}>Driver</th><th className={thCell}>Description</th><th className={thCell}>Status</th><th className={`${thCell} text-right`}>Date</th></tr></thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-white/10">
+                    {complaints.map(c => (<tr key={c.id} className="transition-colors hover:bg-slate-100/50 dark:hover:bg-slate-700/50">
                         <td className={tdCell}>{c.student_name}</td><td className={tdCell}>{c.driver_name}</td><td className={`${tdCell} max-w-xs truncate`}>{c.description}</td>
-                        <td className={tdCell}><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.status === 'Pending' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>{c.status}</span></td>
+                        <td className={tdCell}><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.status === 'Pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300'}`}>{c.status}</span></td>
                         <td className={`${tdCell} text-right text-slate-500`}>{new Date(c.created_at).toLocaleDateString()}</td>
                     </tr>))}
                 </tbody>
@@ -284,9 +284,9 @@ const ReportsTab: React.FC = () => (
 
 // --- MODAL COMPONENTS ---
 const labelStyle = "block text-sm font-medium text-slate-700 dark:text-slate-300";
-const inputStyle = "mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-slate-700";
-const btnPrimary = "inline-flex justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200";
-const btnSecondary = "inline-flex justify-center px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors";
+const inputStyle = "mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-lightbg dark:bg-slate-700";
+const btnPrimary = "inline-flex justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-gradient-to-r from-primary to-secondary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:opacity-50 transition-all duration-200 transform hover:scale-105";
+const btnSecondary = "inline-flex justify-center px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm text-sm font-medium text-slate-700 dark:text-slate-200 bg-lightcard dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors";
 const btnDanger = "inline-flex justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 transition-all duration-200";
 
 interface EditUserModalProps { user: StudentWithUser | DriverWithUser; vans: Van[]; onClose: () => void; onSave: (vanId: string) => void; }
@@ -352,9 +352,9 @@ const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({ item, onClose, 
 
 // --- HELPER & STYLING COMPONENTS ---
 const StatCard: React.FC<{title: string, value: string, icon: React.ElementType}> = ({ title, value, icon: Icon }) => (
-    <Card className="transform transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/10 rounded-2xl">
+    <Card className="shadow-light dark:shadow-dark">
         <div className="flex items-center">
-            <div className="p-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg">
+            <div className="p-4 rounded-full bg-gradient-to-br from-primary to-secondary text-white shadow-lg">
                 <Icon className="h-7 w-7" />
             </div>
             <div className="ml-4">
@@ -365,9 +365,9 @@ const StatCard: React.FC<{title: string, value: string, icon: React.ElementType}
     </Card>
 );
 const Modal: React.FC<{title: string, onClose: () => void, children: React.ReactNode}> = ({ title, onClose, children }) => (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" aria-modal="true" role="dialog">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md animate-fade-in-up">
-           <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" aria-modal="true" role="dialog">
+        <div className="bg-lightcard dark:bg-darkcard rounded-2xl shadow-dark w-full max-w-md animate-fade-in-up">
+           <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-white/10">
              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
              <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"><X size={20} /></button>
            </div>

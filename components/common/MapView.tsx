@@ -9,16 +9,16 @@ interface MapViewProps {
 }
 
 const userIconHtml = `
-  <div class="p-2 rounded-full shadow-lg bg-red-500">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-white">
-      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-      <circle cx="12" cy="10" r="3"/>
+  <div class="flex items-center justify-center w-8 h-8 rounded-full shadow-lg bg-red-500 border-2 border-white">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="3" fill="white" stroke="none" />
     </svg>
   </div>`;
 
 const vanIconHtml = `
-  <div class="p-2 rounded-full shadow-lg bg-blue-500">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-white">
+  <div class="flex items-center justify-center w-10 h-10 rounded-full shadow-lg bg-primary border-2 border-white">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
       <circle cx="7" cy="17" r="2"/>
       <circle cx="17" cy="17" r="2"/>
@@ -30,17 +30,17 @@ const vanIconHtml = `
 const userIcon = L.divIcon({
   html: userIconHtml,
   className: 'bg-transparent border-0',
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -40],
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+  popupAnchor: [0, -16],
 });
 
 const vanIcon = L.divIcon({
   html: vanIconHtml,
   className: 'bg-transparent border-0',
   iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -40],
+  iconAnchor: [20, 20],
+  popupAnchor: [0, -20],
 });
 
 const MapView: React.FC<MapViewProps> = ({ userPosition, vanPosition, zoom = 13 }) => {
@@ -61,7 +61,7 @@ const MapView: React.FC<MapViewProps> = ({ userPosition, vanPosition, zoom = 13 
       center={userPosition}
       zoom={zoom}
       scrollWheelZoom={true}
-      style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
+      style={{ height: '100%', width: '100%', borderRadius: '1rem' }}
       className="z-0"
       whenReady={() => {
         // Optional safety measure: ensure leaflet map is ready

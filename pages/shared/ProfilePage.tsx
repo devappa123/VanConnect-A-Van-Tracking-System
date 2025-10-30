@@ -32,7 +32,7 @@ const ProfilePage: React.FC = () => {
 
   const labelStyle = "text-sm font-medium text-slate-500 dark:text-slate-400";
   const valueStyle = "mt-1 text-lg text-slate-800 dark:text-slate-100";
-  const inputStyle = `mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-lg`;
+  const inputStyle = `mt-1 block w-full px-3 py-2 bg-lightcard dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-lg`;
 
 
   const renderRoleSpecificFields = () => {
@@ -68,16 +68,16 @@ const ProfilePage: React.FC = () => {
 
   return (
     <MainLayout role={user.role} title="My Profile">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto animate-fade-in-up">
         <Card>
           <div className="flex flex-col md:flex-row items-center md:items-start">
             <div className="relative mb-4 md:mb-0 md:mr-8">
               <img 
-                className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-lg" 
+                className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-darkcard shadow-lg" 
                 src={user.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`} 
                 alt="Profile" 
               />
-              <label htmlFor="avatar-upload" className="absolute bottom-1 right-1 bg-blue-600 p-2 rounded-full text-white cursor-pointer hover:bg-blue-700 transition-colors">
+              <label htmlFor="avatar-upload" className="absolute bottom-1 right-1 bg-gradient-to-r from-primary to-secondary p-2 rounded-full text-white cursor-pointer hover:opacity-90 transition-all transform hover:scale-110">
                 <Camera className="w-4 h-4" />
                 <input id="avatar-upload" type="file" className="hidden" />
               </label>
@@ -87,7 +87,7 @@ const ProfilePage: React.FC = () => {
                  <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{user.name}</h2>
                  <button 
                     onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                    className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                    className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-primary to-secondary rounded-lg shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-all transform hover:scale-105"
                 >
                   {isEditing ? 'Save Changes' : 'Edit Profile'}
                 </button>
@@ -100,7 +100,7 @@ const ProfilePage: React.FC = () => {
                 </div>
                 <div>
                   <label className={labelStyle}>Email Address</label>
-                  <p className={valueStyle}>{user.email}</p>
+                  <p className={`${valueStyle} text-slate-500`}>{user.email}</p>
                 </div>
                 <div>
                   <label className={labelStyle}>Role</label>

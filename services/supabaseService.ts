@@ -294,16 +294,37 @@ export const getAllComplaints = async (): Promise<Complaint[]> => {
 };
 
 export const getComplaintsByStudentId = async (studentId: string): Promise<Complaint[]> => {
-    const { data, error } = await supabase
-        .from('complaints')
-        .select('*, driver:drivers(user:users(name))')
-        .eq('student_id', studentId)
-        .order('created_at', { ascending: false });
+    // Fetch student's current van_id and all their complaints in parallel for efficiency
+    const [studentRes, complaintsRes] = await Promise.all([
+        supabase.from('students').select('van_id').eq('id', studentId).single(),
+        supabase.from('complaints').select('*, driver:drivers(user:users(name))').eq('student_id', studentId).order('created_at', { ascending: false })
+    ]);
 
-    if (error) throw new Error(error.message);
-    return data.map((c: any) => ({
+    if (studentRes.error && studentRes.error.code !== 'PGRST116') { // Ignore "0 rows" error which is not a fatal error
+        console.error("Error fetching student for complaints:", studentRes.error);
+        throw studentRes.error;
+    }
+    if (complaintsRes.error) {
+        console.error("Error fetching complaints:", complaintsRes.error);
+        throw complaintsRes.error;
+    }
+
+    let currentDriverName: string | undefined = undefined;
+    if (studentRes.data?.van_id) {
+        // If the student is assigned to a van, find out who the driver is.
+        const driver = await getDriverByVanId(studentRes.data.van_id);
+        if (driver) {
+            currentDriverName = driver.name;
+        }
+    }
+    
+    const complaints = complaintsRes.data || [];
+
+    return complaints.map((c: any) => ({
         ...c,
-        driver_name: c.driver?.user?.name || 'Unknown Driver'
+        // Use the driver from the complaint record first (snapshot in time).
+        // If that's null, fall back to the student's currently assigned driver.
+        driver_name: c.driver?.user?.name || currentDriverName || 'Driver not assigned'
     }));
 };
 

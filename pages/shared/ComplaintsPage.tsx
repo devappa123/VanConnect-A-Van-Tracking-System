@@ -13,8 +13,10 @@ const ComplaintsPage: React.FC = () => {
 
   return (
     <MainLayout role={user.role} title="Complaints">
-      {user.role === UserRole.STUDENT && <StudentComplaintsView />}
-      {user.role === UserRole.ADMIN && <AdminComplaintsView />}
+      <div className="animate-fade-in-up">
+        {user.role === UserRole.STUDENT && <StudentComplaintsView />}
+        {user.role === UserRole.ADMIN && <AdminComplaintsView />}
+      </div>
     </MainLayout>
   );
 };
@@ -68,17 +70,17 @@ const StudentComplaintsView: React.FC = () => {
                     </div>
                     <div>
                         <label htmlFor="description" className="block text-sm font-medium text-slate-700 dark:text-slate-300">Description</label>
-                        <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} required className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={4} required className="mt-1 block w-full px-3 py-2 bg-lightcard dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm" />
                     </div>
-                    <button type="submit" disabled={!driver} className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200">
+                    <button type="submit" disabled={!driver} className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-primary to-secondary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:opacity-50 transition-all duration-300 transform hover:scale-105">
                         Submit Complaint
                     </button>
                 </form>
             </Card>
             <Card title="Your Complaint History">
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-                    {complaints.map(c => (
-                        <div key={c.id} className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+                    {complaints.length > 0 ? complaints.map(c => (
+                        <div key={c.id} className="p-4 border border-slate-200 dark:border-white/10 rounded-lg">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h4 className="font-semibold text-slate-800 dark:text-slate-100">Complaint against: {c.driver_name}</h4>
@@ -90,7 +92,7 @@ const StudentComplaintsView: React.FC = () => {
                                 </span>
                             </div>
                         </div>
-                    ))}
+                    )) : <p className="text-center text-sm text-slate-500 dark:text-slate-400">You have not submitted any complaints.</p>}
                 </div>
             </Card>
         </div>
@@ -117,10 +119,10 @@ const AdminComplaintsView: React.FC = () => {
 
     return (
          <>
-         <Card title="All User Complaints">
+         <Card title="All User Complaints" bodyClassName="p-0">
             <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                    <thead className="bg-slate-100 dark:bg-slate-700">
+                <table className="min-w-full">
+                    <thead className="bg-slate-50 dark:bg-darkbg">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Student</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Driver</th>
@@ -129,20 +131,20 @@ const AdminComplaintsView: React.FC = () => {
                             <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+                    <tbody className="divide-y divide-slate-200 dark:divide-white/10">
                         {complaints.map(c => (
                             <tr key={c.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-200">{c.student_name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-200">{c.driver_name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap max-w-sm truncate text-sm text-slate-700 dark:text-slate-200">{c.description}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.status === ComplaintStatus.PENDING ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.status === ComplaintStatus.PENDING ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300' : 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300'}`}>
                                         {c.status}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     {c.status === ComplaintStatus.PENDING && (
-                                        <button onClick={() => setSelectedComplaint(c)} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">Resolve</button>
+                                        <button onClick={() => setSelectedComplaint(c)} className="text-primary hover:text-blue-800 dark:text-secondary dark:hover:text-violet-300">Resolve</button>
                                     )}
                                 </td>
                             </tr>
@@ -152,17 +154,20 @@ const AdminComplaintsView: React.FC = () => {
             </div>
         </Card>
         {selectedComplaint && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <Card title={`Reply to ${selectedComplaint.student_name}`} className="w-full max-w-lg">
-                     <button onClick={() => setSelectedComplaint(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                        <X size={24} />
-                    </button>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-2"><strong>Complaint:</strong> {selectedComplaint.description}</p>
-                    <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4} placeholder="Enter your reply..." required className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                    <button onClick={handleResolve} className="mt-4 w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
-                        Mark as Resolved & Send Reply
-                    </button>
-                </Card>
+             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" aria-modal="true" role="dialog">
+                <div className="bg-lightcard dark:bg-darkcard rounded-2xl shadow-dark w-full max-w-lg animate-fade-in-up">
+                    <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-white/10">
+                        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Reply to {selectedComplaint.student_name}</h3>
+                         <button onClick={() => setSelectedComplaint(null)} className="p-1 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"><X size={20} /></button>
+                    </div>
+                    <div className="p-6">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-2"><strong>Complaint:</strong> {selectedComplaint.description}</p>
+                        <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4} placeholder="Enter your reply..." required className="mt-1 block w-full px-3 py-2 bg-lightcard dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm" />
+                        <button onClick={handleResolve} className="mt-4 w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-primary to-secondary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary transition-all duration-300 transform hover:scale-105">
+                            Mark as Resolved & Send Reply
+                        </button>
+                    </div>
+                </div>
             </div>
         )}
         </>

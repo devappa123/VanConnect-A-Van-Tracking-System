@@ -114,15 +114,15 @@ const DriverDashboard: React.FC = () => {
 
   if (loading || !user) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="w-16 h-16 border-4 border-t-4 border-t-blue-600 border-slate-200 rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center h-screen bg-lightbg dark:bg-darkbg">
+        <div className="w-16 h-16 border-4 border-t-primary border-slate-200 dark:border-slate-700 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
     <MainLayout role={UserRole.DRIVER} title="Driver Dashboard">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full animate-fade-in-up">
         <div className="lg:col-span-1 flex flex-col gap-6">
            <Card>
             <div className="flex flex-col items-center justify-between text-center">
@@ -136,23 +136,23 @@ const DriverDashboard: React.FC = () => {
               <button
                 onClick={handleTripToggle}
                 disabled={!vanId}
-                className={`mt-4 w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-xl shadow-sm text-white transition-all duration-200 ${
+                className={`mt-4 w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-xl shadow-md text-white transition-all duration-300 ease-in-out transform hover:scale-105 ${
                   isTripActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
                 } disabled:bg-slate-400 disabled:cursor-not-allowed`}
               >
                 {isTripActive ? <StopCircle className="w-5 h-5 mr-2"/> : <PlayCircle className="w-5 h-5 mr-2"/>}
                 {isTripActive ? 'End Trip' : 'Start Trip'}
               </button>
-              <Link to="/driver/message" className="mt-3 inline-block text-sm text-blue-600 hover:text-blue-500 font-medium">
+              <Link to="/driver/message" className="mt-3 inline-block text-sm text-primary hover:text-blue-500 font-medium">
                 Send late message
               </Link>
             </div>
           </Card>
 
           <Card title="Assigned Students">
-            <div className="space-y-3 max-h-80 overflow-y-auto">
+            <div className="space-y-3 max-h-[calc(100vh-24rem)] overflow-y-auto">
                 {students.length > 0 ? students.map((student) => (
-                    <div key={student.id} className="flex items-center justify-between p-2 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                    <div key={student.id} className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
                         <div>
                             <p className="font-medium text-sm text-slate-800 dark:text-slate-200">{student.user?.name || 'Unnamed Student'}</p>
                             <p className="text-xs text-slate-500 dark:text-slate-400">{student.usn || 'No USN'}</p>
@@ -169,7 +169,7 @@ const DriverDashboard: React.FC = () => {
         </div>
 
         <div className="lg:col-span-2 h-[70vh] lg:h-full">
-          <Card className="h-full w-full flex flex-col" title="Your Location" bodyClassName="flex-grow">
+          <Card className="h-full w-full flex flex-col" title="Your Location" bodyClassName="flex-grow p-2">
               <MapView userPosition={location} />
           </Card>
         </div>
