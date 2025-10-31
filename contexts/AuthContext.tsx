@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<void>;
   signup: (data: SignupData) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,6 +36,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     checkUserSession();
   }, [checkUserSession]);
+  
+  const refreshUser = useCallback(async () => {
+    // This function is essentially a publicly accessible version of checkUserSession
+    try {
+        const sessionUser = await SupabaseService.getSession();
+        if (sessionUser) {
+          setUser(sessionUser);
+        }
+    } catch (error) {
+        console.error("Failed to refresh user session:", error);
+    }
+  }, []);
+
 
   const login = async (credentials: LoginCredentials) => {
     const loggedInUser = await SupabaseService.login(credentials);
@@ -52,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

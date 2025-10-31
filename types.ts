@@ -57,6 +57,21 @@ export interface DriverWithUser extends Driver {
   user: User;
 }
 
+export interface Stop {
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface Route {
+  id: number;
+  route_name: string;
+  start_latitude: number;
+  start_longitude: number;
+  end_latitude: number;
+  end_longitude: number;
+  stops?: Stop[];
+}
 
 export interface Van {
   id: string;
@@ -65,6 +80,12 @@ export interface Van {
   driver_id: string;
   driver_name?: string; // For display
   capacity: number;
+  route_id?: number;
+  route?: { route_name: string }; // For joined data
+}
+
+export interface VanWithRoute extends Van {
+  route?: Route;
 }
 
 export interface LocationUpdate {
@@ -119,4 +140,19 @@ export interface AutocompletePrediction {
 
 export interface AutocompleteResponse {
     predictions: AutocompletePrediction[];
+}
+
+// Types for Google Place Details API
+export interface PlaceDetails {
+    location: {
+        latitude: number;
+        longitude: number;
+    };
+    displayName: {
+        text: string;
+    }
+}
+
+export interface PlaceDetailsResponse {
+    place: PlaceDetails;
 }

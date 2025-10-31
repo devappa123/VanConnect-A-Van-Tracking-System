@@ -2,6 +2,7 @@ import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { MapProvider } from './contexts/MapContext';
 
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
@@ -18,7 +19,9 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppRoutes />
+        <MapProvider>
+          <AppRoutes />
+        </MapProvider>
       </AuthProvider>
     </ThemeProvider>
   );

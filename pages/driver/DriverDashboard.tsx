@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import MainLayout from '../../components/layout/MainLayout';
-import { UserRole, StudentWithUser, Driver } from '../../types';
+import { UserRole, StudentWithUser, VanWithRoute } from '../../types';
 import Card from '../../components/common/Card';
 import MapView from '../../components/common/MapView';
-import { updateVanLocation, getDriverByUserId, getStudentsByVanId } from '../../services/supabaseService';
+import { updateVanLocation, getDriverByUserId, getStudentsByVanId, getVanWithRoute } from '../../services/supabaseService';
 import { PlayCircle, StopCircle, Phone } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
@@ -13,94 +13,76 @@ const DriverDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const [isTripActive, setIsTripActive] = useState(false);
-  const [location, setLocation] = useState<[number, number]>([28.6139, 77.2090]); // Default location
+  const [location, setLocation] = useState<[number, number] | undefined>(undefined);
   const [students, setStudents] = useState<StudentWithUser[]>([]);
+  const [route, setRoute] = useState<VanWithRoute['route'] | undefined>(undefined);
   const locationIntervalRef = useRef<number | null>(null);
   const [vanId, setVanId] = useState<string | null>(null);
-  const [vanNumber, setVanNumber] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Auth Guard
+  // 1. Fetch driver profile and initial data
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/login', { replace: true });
-    }
-  }, [user, loading, navigate]);
-
-  // 2. Fetch driver profile and initial data
-  useEffect(() => {
-    if (!user) return;
+    if (!user || !user.driver) return;
     
-    const fetchDriverProfile = async () => {
+    const fetchDriverData = async () => {
       try {
-        const driverProfile = await getDriverByUserId(user.id);
-        if (driverProfile) {
-          setVanId(driverProfile.van_id || null);
-          setVanNumber(driverProfile.van_number || null);
-          if (!driverProfile.van_id) {
-            setError("You are not assigned to a van. Location sharing is disabled.");
-          }
-        } else {
-           setError("Driver profile not found.");
+        const driverProfile = user.driver;
+        const currentVanId = driverProfile.van_id || null;
+        setVanId(currentVanId);
+
+        if (!currentVanId) {
+          setError("You are not assigned to a van. Location sharing is disabled.");
+          return;
         }
+
+        const [studentList, vanDetails] = await Promise.all([
+          getStudentsByVanId(currentVanId),
+          getVanWithRoute(currentVanId)
+        ]);
+
+        setStudents(studentList);
+        if (vanDetails?.route) {
+          setRoute(vanDetails.route);
+        } else {
+          setError("No route assigned to your van.");
+        }
+
       } catch (err) {
-        console.error("Error fetching driver profile:", err);
-        setError("Could not fetch your profile.");
+        console.error("Error fetching driver data:", err);
+        setError("Could not fetch your details or assigned route/students.");
       }
     };
-    fetchDriverProfile();
+    fetchDriverData();
   }, [user]);
 
-  // 3. Fetch assigned students when van ID is available
+  // 2. Handle location updates
   useEffect(() => {
-    if (!vanId) {
-        setStudents([]);
-        return;
-    };
-
-    let isCancelled = false;
-    const fetchStudents = async () => {
-      try {
-        const studentList = await getStudentsByVanId(vanId);
-        if (!isCancelled) {
-          setStudents(studentList);
-        }
-      } catch (err) {
-        console.error("Error fetching students:", err);
-      }
-    };
-    fetchStudents();
-    return () => { isCancelled = true; };
-  }, [vanId]);
-
-  // 4. Handle location updates
-  useEffect(() => {
-    if (isTripActive && vanId) {
-      const sendLocationUpdate = () => {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            setLocation([latitude, longitude]);
+    const sendLocationUpdate = (pos: GeolocationPosition) => {
+        const { latitude, longitude } = pos.coords;
+        setLocation([latitude, longitude]);
+        if (vanId && isTripActive) {
             updateVanLocation(vanId, { latitude, longitude }).catch(e => console.error("Failed to send location", e));
-          },
-          (geoError) => console.error("Geolocation error:", geoError.message),
-          { enableHighAccuracy: true }
-        );
-      };
-      
-      sendLocationUpdate(); // Initial update
-      locationIntervalRef.current = window.setInterval(sendLocationUpdate, 10000); // Update every 10 seconds
+        }
+    };
 
+    const handleError = (geoError: GeolocationPositionError) => {
+        console.error("Geolocation error:", geoError.message);
+        // Fallback to college location if permission is denied
+        if (!location) setLocation([13.0503, 77.7146]);
+    };
+
+    // Get initial position
+    navigator.geolocation.getCurrentPosition(sendLocationUpdate, handleError);
+
+    if (isTripActive && vanId) {
+      locationIntervalRef.current = window.setInterval(() => {
+         navigator.geolocation.getCurrentPosition(sendLocationUpdate, handleError, { enableHighAccuracy: true });
+      }, 10000); // Update every 10 seconds
     } else {
       if (locationIntervalRef.current) {
         clearInterval(locationIntervalRef.current);
         locationIntervalRef.current = null;
       }
-       // Get one-time location for map display even if trip is not active
-      navigator.geolocation.getCurrentPosition(
-        (position) => setLocation([position.coords.latitude, position.coords.longitude]),
-        (geoError) => console.error("Geolocation error:", geoError.message)
-      );
     }
 
     return () => {
@@ -108,7 +90,7 @@ const DriverDashboard: React.FC = () => {
         clearInterval(locationIntervalRef.current);
       }
     };
-  }, [isTripActive, vanId]);
+  }, [isTripActive, vanId, location]);
   
   const handleTripToggle = () => setIsTripActive(prev => !prev);
 
@@ -169,8 +151,8 @@ const DriverDashboard: React.FC = () => {
         </div>
 
         <div className="lg:col-span-2 h-[70vh] lg:h-full">
-          <Card className="h-full w-full flex flex-col" title="Your Location" bodyClassName="flex-grow p-2">
-              <MapView userPosition={location} />
+          <Card className="h-full w-full flex flex-col" title={route?.route_name || "Your Location"} bodyClassName="flex-grow p-2">
+              <MapView driverPosition={location} route={route} />
           </Card>
         </div>
       </div>

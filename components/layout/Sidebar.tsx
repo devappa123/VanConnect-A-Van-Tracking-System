@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { UserRole } from '../../types';
-import { LayoutDashboard, User, MessageSquareWarning, LogOut, Car, Users, MessageSquare, Settings, BarChart2, ChevronLeft, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, User, MessageSquareWarning, LogOut, Car, Users, MessageSquare, Settings, BarChart2, ChevronLeft, Moon, Sun, Map as MapIcon } from 'lucide-react';
 
 interface SidebarProps {
   role: UserRole;
@@ -28,6 +28,7 @@ const driverLinks = [
 const adminLinks = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Overview' },
   { to: '/admin/dashboard?tab=vans', icon: Car, label: 'Vans' },
+  { to: '/admin/dashboard?tab=routes', icon: MapIcon, label: 'Routes' },
   { to: '/admin/dashboard?tab=drivers', icon: User, label: 'Drivers' },
   { to: '/admin/dashboard?tab=students', icon: Users, label: 'Students' },
   { to: '/admin/dashboard?tab=complaints', icon: MessageSquareWarning, label: 'Complaints' },

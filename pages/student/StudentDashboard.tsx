@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../../components/layout/MainLayout';
-import { UserRole, LocationUpdate, Attendance, Driver, Notification } from '../../types';
+import { UserRole, LocationUpdate, Attendance, Driver, Notification, VanWithRoute } from '../../types';
 import Card from '../../components/common/Card';
 import MapView from '../../components/common/MapView';
-import { getLiveVanLocation, getDriverByVanId, getStudentAttendance, getNotificationsByVanNumber } from '../../services/supabaseService';
+import { getLiveVanLocation, getDriverByVanId, getStudentAttendance, getNotificationsByVanNumber, getVanWithRoute } from '../../services/supabaseService';
 import { supabase } from '../../services/supabaseClient';
 import { Phone, MessageSquare, Bell } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,25 +11,15 @@ import { useAuth } from '../../contexts/AuthContext';
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
   const [vanLocation, setVanLocation] = useState<LocationUpdate | null>(null);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [driver, setDriver] = useState<(Driver & { name: string; email: string; }) | null>(null);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [vanDetails, setVanDetails] = useState<VanWithRoute | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const vanId = user?.student?.van_id;
   const vanNumber = user?.student?.van_number;
-
-  // Effect to get user's location
-  useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation([position.coords.latitude, position.coords.longitude]);
-      },
-      () => setUserLocation([28.6139, 77.2090]) // Fallback
-    );
-  }, []);
 
   // Effect for fetching initial dashboard data
   useEffect(() => {
@@ -49,26 +39,34 @@ const StudentDashboard: React.FC = () => {
         const locationPromise = getLiveVanLocation(vanId);
         const driverPromise = getDriverByVanId(vanId);
         const attendancePromise = getStudentAttendance(user.student.id);
+        const vanDetailsPromise = getVanWithRoute(vanId);
         const notificationsPromise = vanNumber
           ? getNotificationsByVanNumber(vanNumber)
           : Promise.resolve([]);
 
         const [
+          vanData,
           location,
           driverDetails,
           attendanceRecords,
           initialNotifications,
         ] = await Promise.all([
+          vanDetailsPromise,
           locationPromise,
           driverPromise,
           attendancePromise,
           notificationsPromise,
         ]);
         
+        setVanDetails(vanData);
         setVanLocation(location);
         setDriver(driverDetails);
         setAttendance(attendanceRecords);
         setNotifications(initialNotifications);
+
+        if (vanData && !vanData.route) {
+          setError("No route information available for your van.");
+        }
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
         setError("Could not fetch required data.");
@@ -123,26 +121,24 @@ const StudentDashboard: React.FC = () => {
   }, [vanId]);
   
 
-  const isLoading = loading || !userLocation;
-
   return (
     <MainLayout role={UserRole.STUDENT} title="Dashboard">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full animate-fade-in-up">
         {/* Map View */}
         <div className="lg:col-span-2 h-[60vh] lg:h-full">
-            <Card className="h-full w-full flex flex-col" title="Live Van Tracking" bodyClassName="flex-grow p-2">
-                {isLoading ? (
+            <Card className="h-full w-full flex flex-col" title={vanDetails?.route?.route_name ? `Live Tracking: ${vanDetails.route.route_name}`: "Live Van Tracking"} bodyClassName="flex-grow p-2">
+                {loading ? (
                     <div className="flex items-center justify-center h-full">
                         <div className="w-8 h-8 border-2 border-t-primary border-slate-200 dark:border-slate-700 rounded-full animate-spin"></div>
-                        <p className="ml-2 text-slate-600 dark:text-slate-400">Loading map and location...</p>
+                        <p className="ml-2 text-slate-600 dark:text-slate-400">Loading data...</p>
                     </div>
                 ) : (
                   <>
                     {error && <div className="text-center text-red-500 p-4">{error}</div>}
-                    {!error && userLocation && (
+                    {!error && (
                       <MapView 
-                          userPosition={userLocation}
                           vanPosition={vanLocation ? [vanLocation.latitude, vanLocation.longitude] : undefined}
+                          route={vanDetails?.route}
                       />
                     )}
                   </>
@@ -155,7 +151,7 @@ const StudentDashboard: React.FC = () => {
             {driver ? (
                 <>
                 <div className="flex items-center space-x-4">
-                    <img className="w-16 h-16 rounded-full" src={`https://i.pravatar.cc/150?u=${driver.user_id}`} alt="Driver"/>
+                    <img className="w-16 h-16 rounded-full" src="/assets/images/driver.png" alt="Driver"/>
                     <div>
                         <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100">{driver.name}</h4>
                         <p className="text-sm text-slate-500 dark:text-slate-400">Phone: {driver.phone || 'N/A'}</p>

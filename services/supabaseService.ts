@@ -1,5 +1,5 @@
 // FIX: Imported `User` type to resolve 'Cannot find name' errors.
-import { AuthenticatedUser, UserRole, Van, Complaint, ComplaintStatus, Attendance, LocationUpdate, Student, Driver, User, StudentWithUser, DriverWithUser, Notification } from '../types';
+import { AuthenticatedUser, UserRole, Van, Complaint, ComplaintStatus, Attendance, LocationUpdate, Student, Driver, User, StudentWithUser, DriverWithUser, Notification, VanWithRoute, Route } from '../types';
 import { supabase } from './supabaseClient';
 
 export interface LoginCredentials {
@@ -141,6 +141,21 @@ export const logout = async (): Promise<void> => {
 
 // --- DATA FETCHING FUNCTIONS ---
 
+export const getVanWithRoute = async (vanId: string): Promise<VanWithRoute | null> => {
+    const { data, error } = await supabase
+        .from('vans')
+        .select('*, route:routes(*)')
+        .eq('id', vanId)
+        .single();
+
+    if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching van with route:", error.message);
+        return null;
+    }
+    
+    return data as VanWithRoute | null;
+};
+
 export const getDriverByUserId = async (userId: string): Promise<Driver | null> => {
   const { data, error } = await supabase
     .from('drivers')
@@ -238,24 +253,35 @@ export const getAllDrivers = async (): Promise<DriverWithUser[]> => {
 export const getVans = async (): Promise<Van[]> => {
     const { data, error } = await supabase
         .from('vans')
-        .select('*, driver:drivers!vans_driver_id_fkey(user:users(name))');
+        .select('*, driver:drivers!vans_driver_id_fkey(user:users(name)), route:routes(route_name)');
     if (error) throw new Error(error.message);
 
     return data.map((v: any) => ({
         ...v,
-        driver_name: v.driver?.user?.name || 'N/A'
+        driver_name: v.driver?.user?.name || null,
+        route_name: v.route?.route_name || v.route_name // Prefer joined name
     }));
 };
 
 export const getDriverByVanId = async (vanId: string): Promise<(Driver & { name: string, email: string }) | null> => {
     const { data, error } = await supabase
-        .from('vans')
-        .select('drivers!vans_driver_id_fkey(*, users(*))')
-        .eq('id', vanId)
-        .single();
-    if (error || !data || !('drivers' in data) || !data.drivers) return null;
-    const { drivers } = data as any;
-    return { ...drivers, ...drivers.users };
+        .from('drivers')
+        .select('*, user:users(name, email)')
+        .eq('van_id', vanId)
+        .maybeSingle();
+
+    if (error) {
+        console.error("Error fetching driver by van ID:", error);
+        return null;
+    }
+    if (!data || !data.user) return null;
+
+    const { user, ...driverData } = data;
+    return {
+        ...driverData,
+        name: user.name,
+        email: user.email,
+    };
 };
 
 export const getNotificationsByVanNumber = async (vanNumber: string): Promise<Notification[]> => {
@@ -370,6 +396,17 @@ export const getStudentCountForVan = async (vanId: string): Promise<number> => {
     return count || 0;
 };
 
+export const updateUserDetails = async (userId: string, updates: Partial<Pick<User, 'name'>>): Promise<User> => {
+    const { data, error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', userId)
+        .select();
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) throw new Error("User not found or failed to update.");
+    return data[0];
+};
+
 export const updateStudentDetails = async (studentId: string, updates: Partial<Student>): Promise<Student> => {
     const { data, error } = await supabase
         .from('students')
@@ -422,7 +459,7 @@ export const assignVanToDriver = async (driverId: string, vanId: string | null):
 };
 
 
-export const createVan = async (vanData: Pick<Van, 'van_no' | 'route_name' | 'capacity'>): Promise<Van> => {
+export const createVan = async (vanData: Pick<Van, 'van_no' | 'route_name' | 'capacity'> & { route_id?: number | null }): Promise<Van> => {
     const { data, error } = await supabase
         .from('vans')
         .insert(vanData)
@@ -432,7 +469,7 @@ export const createVan = async (vanData: Pick<Van, 'van_no' | 'route_name' | 'ca
     return data[0];
 };
 
-export const updateVan = async (vanId: string, vanData: Partial<Pick<Van, 'van_no' | 'route_name' | 'capacity'>>): Promise<Van> => {
+export const updateVan = async (vanId: string, vanData: Partial<Pick<Van, 'van_no' | 'route_name' | 'capacity'>> & { route_id?: number | null }): Promise<Van> => {
     const { data, error } = await supabase
         .from('vans')
         .update(vanData)
@@ -461,5 +498,33 @@ export const deleteDriver = async (driverId: string): Promise<void> => {
     // Note: The schema has ON DELETE CASCADE from drivers -> users -> auth.users.
     // Deleting a driver profile will delete their user account entirely.
     const { error } = await supabase.from('drivers').delete().eq('id', driverId);
+    if (error) throw error;
+};
+
+
+// --- ROUTE MANAGEMENT ---
+
+export const getRoutes = async (): Promise<Route[]> => {
+    const { data, error } = await supabase.from('routes').select('*').order('route_name');
+    if (error) throw error;
+    return data || [];
+};
+
+export const createRoute = async (routeData: Omit<Route, 'id'>): Promise<Route> => {
+    const { data, error } = await supabase.from('routes').insert(routeData).select().single();
+    if (error) throw error;
+    if (!data) throw new Error("Failed to create route.");
+    return data;
+};
+
+export const updateRoute = async (routeId: number, routeData: Partial<Omit<Route, 'id'>>): Promise<Route> => {
+    const { data, error } = await supabase.from('routes').update(routeData).eq('id', routeId).select().single();
+    if (error) throw error;
+    if (!data) throw new Error("Route not found or failed to update.");
+    return data;
+};
+
+export const deleteRoute = async (routeId: number): Promise<void> => {
+    const { error } = await supabase.from('routes').delete().eq('id', routeId);
     if (error) throw error;
 };
