@@ -51,13 +51,17 @@ export const MapProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const ApiKeyModal = () => (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[200]">
-      <div className="bg-lightcard dark:bg-darkcard p-8 rounded-2xl shadow-dark w-full max-w-md text-center">
+      <div className="bg-lightcard dark:bg-darkcard p-8 rounded-2xl shadow-dark w-full max-w-md">
         <Key className="mx-auto w-12 h-12 text-amber-500 mb-4" />
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Google Maps API Key Required</h2>
-        <p className="text-slate-600 dark:text-slate-400 mt-2">
-          To use the map features, please enter your Google Maps JavaScript API key.
-          Ensure it has the "Maps JavaScript API" and "Directions API" enabled.
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-white text-center">Google Maps API Key Required</h2>
+        <p className="text-slate-600 dark:text-slate-400 mt-2 text-left">
+          To enable map features, please provide a Google Maps API key. In your Google Cloud Console, ensure these 3 APIs are enabled for this key:
         </p>
+        <ul className="list-disc list-inside text-left mt-2 text-slate-600 dark:text-slate-400 space-y-1 text-sm">
+          <li><span className="font-semibold text-slate-700 dark:text-slate-300">Maps JavaScript API</span> (for the map view)</li>
+          <li><span className="font-semibold text-slate-700 dark:text-slate-300">Directions API</span> (for drawing routes)</li>
+          <li><span className="font-semibold text-slate-700 dark:text-slate-300">Distance Matrix API</span> (for calculating ETA)</li>
+        </ul>
         <form onSubmit={handleKeySubmit} className="mt-6">
           <input
             type="text"

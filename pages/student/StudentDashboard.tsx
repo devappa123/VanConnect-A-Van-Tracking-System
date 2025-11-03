@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '../../components/layout/MainLayout';
 import { UserRole, LocationUpdate, Driver, Notification, VanWithRoute } from '../../types';
 import Card from '../../components/common/Card';
 import MapView from '../../components/common/MapView';
 import { getLiveVanLocation, getDriverByVanId, getNotificationsByVanNumber, getVanWithRoute } from '../../services/supabaseService';
+import { getEta } from '../../services/placesService';
 import { supabase } from '../../services/supabaseClient';
-import { Phone, MessageSquare, Bell } from 'lucide-react';
+import { Phone, MessageSquare, Bell, Clock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const StudentDashboard: React.FC = () => {
@@ -16,6 +18,10 @@ const StudentDashboard: React.FC = () => {
   const [vanDetails, setVanDetails] = useState<VanWithRoute | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [eta, setEta] = useState<string | null>('Calculating...');
+  const [studentLocation, setStudentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const etaIntervalRef = useRef<number | null>(null);
 
   const vanId = user?.student?.van_id;
   const vanNumber = user?.student?.van_number;
@@ -90,8 +96,6 @@ const StudentDashboard: React.FC = () => {
         async (payload) => {
           const newNotification = payload.new as Notification;
           
-          // The payload.new from a subscription doesn't include joined data like the driver's name.
-          // We need to fetch the driver's name separately for the new notification.
           const { data: driverData } = await supabase
             .from('users')
             .select('name')
@@ -136,6 +140,47 @@ const StudentDashboard: React.FC = () => {
       supabase.removeChannel(locationChannel);
     };
   }, [vanId]);
+
+  // Effect for getting student's live location
+  useEffect(() => {
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setStudentLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      (err) => {
+        console.error("Could not get student location:", err);
+        setEta("Could not get your location.");
+      },
+      { enableHighAccuracy: true }
+    );
+    
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  // Effect for calculating ETA
+  useEffect(() => {
+    const calculateEta = async () => {
+      if (vanLocation && studentLocation) {
+        try {
+          const driverCoords = { lat: vanLocation.latitude, lng: vanLocation.longitude };
+          const etaResult = await getEta(driverCoords, studentLocation);
+          setEta(etaResult);
+        } catch (error) {
+          console.error("Failed to calculate ETA:", error);
+          setEta("Error calculating ETA");
+        }
+      }
+    };
+
+    calculateEta(); // Calculate immediately on data availability
+
+    if (etaIntervalRef.current) clearInterval(etaIntervalRef.current);
+    etaIntervalRef.current = window.setInterval(calculateEta, 60000); // Update every 60 seconds
+
+    return () => {
+      if (etaIntervalRef.current) clearInterval(etaIntervalRef.current);
+    };
+  }, [vanLocation, studentLocation]);
   
 
   return (
@@ -165,6 +210,20 @@ const StudentDashboard: React.FC = () => {
         </div>
         
         <div className="lg:col-span-1 flex flex-col gap-6">
+          <Card title="Estimated Time of Arrival">
+            <div className="flex items-center">
+              <Clock className="w-8 h-8 text-primary mr-4 flex-shrink-0" />
+              <div className="flex-grow">
+                {eta && !eta.includes('...') && !eta.includes('Error') && !eta.includes('Could not') && !eta.includes('Unavailable') ? (
+                  <p className="text-slate-700 dark:text-slate-200">
+                    Driver will reach your location in approximately <span className="font-bold text-lg text-primary">{eta}</span>.
+                  </p>
+                ) : (
+                  <p className="text-slate-500 dark:text-slate-400 italic">{eta || 'Calculating...'}</p>
+                )}
+              </div>
+            </div>
+          </Card>
           <Card title="Driver Details">
             {driver ? (
                 <>

@@ -1,3 +1,4 @@
+
 // FIX: Removed reference to 'google.maps' types which was causing a 'Cannot find type definition file' error.
 // The Google Maps script is loaded dynamically in MapContext, and we will reference its objects via the `window` object.
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -242,7 +243,7 @@ const MapView: React.FC<MapViewProps> = ({ vanPosition, route, driverPosition, u
             <button
                 onClick={handleCenterOnUser}
                 disabled={!userPosition}
-                className="absolute bottom-4 right-4 z-10 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-lg flex items-center justify-center text-primary dark:text-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-110 active:scale-100"
+                className="absolute bottom-28 right-4 z-20 w-12 h-12 bg-white dark:bg-slate-700 rounded-full shadow-lg flex items-center justify-center text-primary dark:text-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-110 active:scale-100"
                 aria-label="Center on my location"
             >
                 <LocateFixed className="w-6 h-6" />

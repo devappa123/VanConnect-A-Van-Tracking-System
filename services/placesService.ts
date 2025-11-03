@@ -1,3 +1,4 @@
+
 import type { AutocompletePrediction, AutocompleteResponse, PlaceDetailsResponse, PlaceDetails } from '../types';
 
 const RAPIDAPI_KEY = '011cc0c653msh48fedefcd628682p1dcabcjsnf69ae353ac39';
@@ -79,4 +80,42 @@ export const getPlaceDetails = async (placeId: string): Promise<PlaceDetails> =>
         console.error("Failed to fetch place details:", error);
         throw error;
     }
+};
+
+export const getEta = (
+  driverCoords: { lat: number; lng: number },
+  studentCoords: { lat: number; lng: number }
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!(window as any).google || !(window as any).google.maps) {
+      return reject(new Error("Google Maps script not loaded."));
+    }
+
+    const service = new (window as any).google.maps.DistanceMatrixService();
+    
+    const request = {
+      origins: [driverCoords],
+      destinations: [studentCoords],
+      travelMode: (window as any).google.maps.TravelMode.DRIVING,
+      drivingOptions: {
+        departureTime: new Date(),
+        trafficModel: (window as any).google.maps.TrafficModel.BEST_GUESS,
+      },
+    };
+
+    service.getDistanceMatrix(request, (response: any, status: any) => {
+      if (status === 'OK' && response) {
+        const element = response.rows[0]?.elements[0];
+        if (element?.status === 'OK') {
+          resolve(element.duration.text);
+        } else {
+          console.warn("Unable to calculate ETA: element status", element?.status);
+          resolve("Unavailable");
+        }
+      } else {
+        console.error("Distance Matrix request failed due to " + status);
+        reject(new Error("Distance Matrix request failed with status: " + status));
+      }
+    });
+  });
 };
