@@ -1,0 +1,24 @@
+{
+  "short_name": "VanConnect",
+  "name": "Van Connect: College Van Tracking",
+  "description": "A Progressive Web App for college students, van drivers, and administrators to efficiently track, manage, and communicate during college transport operations. It provides live van tracking, student–driver communication, and admin control panels.",
+  "icons": [
+    {
+      "src": "/assets/icons/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/icons/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#3B82F6",
+  "background_color": "#FFFFFF",
+  "scope": "/"
+}

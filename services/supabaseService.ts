@@ -1,5 +1,5 @@
 // FIX: Imported `User` type to resolve 'Cannot find name' errors.
-import { AuthenticatedUser, UserRole, Van, Complaint, ComplaintStatus, Attendance, LocationUpdate, Student, Driver, User, StudentWithUser, DriverWithUser, Notification, VanWithRoute, Route } from '../types';
+import { AuthenticatedUser, UserRole, Van, Complaint, ComplaintStatus, LocationUpdate, Student, Driver, User, StudentWithUser, DriverWithUser, Notification, VanWithRoute, Route } from '../types';
 import { supabase } from './supabaseClient';
 
 export interface LoginCredentials {
@@ -220,20 +220,6 @@ export const updateVanLocation = async (vanId: string, coords: { latitude: numbe
     if (error) throw new Error(error.message);
 };
 
-export const getStudentAttendance = async (studentId: string): Promise<Attendance[]> => {
-    const { data, error } = await supabase
-        .from('attendance')
-        .select('*, student:students(*, user:users(name))')
-        .eq('student_id', studentId);
-        
-    if (error) throw new Error(error.message);
-
-    return data.map((item: any) => ({
-        ...item,
-        student_name: item.student.user.name,
-    }));
-};
-
 export const getAllStudents = async (): Promise<StudentWithUser[]> => {
     const { data, error } = await supabase
         .from('students')
@@ -263,10 +249,10 @@ export const getVans = async (): Promise<Van[]> => {
     }));
 };
 
-export const getDriverByVanId = async (vanId: string): Promise<(Driver & { name: string, email: string }) | null> => {
+export const getDriverByVanId = async (vanId: string): Promise<(Driver & { name: string, email: string, avatar_url?: string }) | null> => {
     const { data, error } = await supabase
         .from('drivers')
-        .select('*, user:users(name, email)')
+        .select('*, user:users(name, email, avatar_url)')
         .eq('van_id', vanId)
         .maybeSingle();
 
@@ -281,14 +267,17 @@ export const getDriverByVanId = async (vanId: string): Promise<(Driver & { name:
         ...driverData,
         name: user.name,
         email: user.email,
+        avatar_url: user.avatar_url,
     };
 };
 
 export const getNotificationsByVanNumber = async (vanNumber: string): Promise<Notification[]> => {
     if (!vanNumber) return [];
-    const { data, error } = await supabase
+
+    // Step 1: Fetch notifications without the join to ensure RLS is simple.
+    const { data: notificationsData, error } = await supabase
         .from('notifications')
-        .select(`*, driver:sender_driver_id(name)`)
+        .select('*')
         .eq('van_number', vanNumber)
         .order('created_at', { ascending: false });
 
@@ -296,12 +285,33 @@ export const getNotificationsByVanNumber = async (vanNumber: string): Promise<No
         console.error('Error fetching notifications:', error);
         throw error;
     }
+    if (!notificationsData || notificationsData.length === 0) {
+        return [];
+    }
 
-    return (data || []).map((n: any) => ({
+    // Step 2: Get all unique driver IDs from the fetched notifications.
+    const driverIds = [...new Set(notificationsData.map(n => n.sender_driver_id))];
+
+    // Step 3: Fetch the names for these drivers in a single, separate query.
+    const { data: driversData, error: driversError } = await supabase
+        .from('users')
+        .select('id, name')
+        .in('id', driverIds);
+
+    if (driversError) {
+        console.error('Error fetching driver names for notifications:', driversError);
+        // Return notifications without names if the second query fails.
+        return notificationsData;
+    }
+    
+    // Step 4: Create a map for quick lookup and combine the data.
+    const driverNameMap = new Map(driversData?.map(d => [d.id, d.name]));
+
+    return notificationsData.map(n => ({
         ...n,
-        driver_name: n.driver?.name || 'Driver'
+        driver_name: driverNameMap.get(n.sender_driver_id) || 'Driver'
     }));
-}
+};
 
 export const getAllComplaints = async (): Promise<Complaint[]> => {
     const { data, error } = await supabase
@@ -429,33 +439,20 @@ export const updateDriverDetails = async (driverId: string, updates: Partial<Dri
     return data[0];
 };
 
-export const assignVanToDriver = async (driverId: string, vanId: string | null): Promise<void> => {
-    // This function handles the complex logic of re-assigning vans.
-    
-    // 1. Find the van being assigned and its current driver (if any)
-    let oldDriverId: string | null = null;
-    if (vanId) {
-        const { data: vanData, error: vanError } = await supabase
-            .from('vans')
-            .select('driver_id')
-            .eq('id', vanId)
-            .single();
-        if (vanError) throw vanError;
-        oldDriverId = vanData.driver_id;
-    }
-    
-    // 2. Un-assign the van from the old driver
-    if (oldDriverId) {
-        await updateDriverDetails(oldDriverId, { van_id: undefined });
-    }
+export const assignVanToStudent = async (studentId: string, vanId: string | null): Promise<void> => {
+    const { error } = await supabase.rpc('assign_van_to_student', {
+        target_student_id: studentId,
+        target_van_id: vanId
+    });
+    if (error) throw error;
+};
 
-    // 3. Assign the van to the new driver
-    await updateDriverDetails(driverId, { van_id: vanId || undefined });
-    
-    // 4. Update the van's own driver_id record
-    if (vanId) {
-        await supabase.from('vans').update({ driver_id: driverId }).eq('id', vanId);
-    }
+export const assignVanToDriver = async (driverId: string, vanId: string | null): Promise<void> => {
+    const { error } = await supabase.rpc('assign_van_to_driver', {
+        target_driver_id: driverId,
+        target_van_id: vanId
+    });
+    if (error) throw error;
 };
 
 

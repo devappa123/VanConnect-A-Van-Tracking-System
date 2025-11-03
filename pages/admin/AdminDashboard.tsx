@@ -101,7 +101,7 @@ const AdminDashboard: React.FC = () => {
     if (!editingUser) return;
 
     try {
-      const newVanId = vanId === '' ? undefined : vanId;
+      const newVanId = vanId === '' ? null : vanId;
       if (editingUser.user.role === 'student') {
         if (newVanId) {
           const van = vans.find(v => v.id === newVanId);
@@ -111,9 +111,9 @@ const AdminDashboard: React.FC = () => {
             return;
           }
         }
-        await SupabaseService.updateStudentDetails(editingUser.id, { van_id: newVanId });
+        await SupabaseService.assignVanToStudent(editingUser.id, newVanId);
       } else { // Driver
-         await SupabaseService.assignVanToDriver(editingUser.id, newVanId || null);
+         await SupabaseService.assignVanToDriver(editingUser.id, newVanId);
       }
       await fetchData(); // Refetch all data to ensure consistency
       closeModal();

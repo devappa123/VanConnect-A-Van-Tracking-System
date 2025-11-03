@@ -9,11 +9,6 @@ export enum ComplaintStatus {
   RESOLVED = 'Resolved',
 }
 
-export enum AttendanceStatus {
-    PRESENT = 'Present',
-    ABSENT = 'Absent',
-}
-
 // Base user from auth.users and public.users
 export interface User {
   id: string; // from auth.users
@@ -106,15 +101,6 @@ export interface Complaint {
   // For display purposes, populated by service
   student_name?: string;
   driver_name?: string;
-}
-
-export interface Attendance {
-    id: string;
-    student_id: string;
-    student_name: string;
-    van_id: string;
-    date: string;
-    status: AttendanceStatus;
 }
 
 export interface Notification {

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../../components/layout/MainLayout';
-import { UserRole, LocationUpdate, Attendance, Driver, Notification, VanWithRoute } from '../../types';
+import { UserRole, LocationUpdate, Driver, Notification, VanWithRoute } from '../../types';
 import Card from '../../components/common/Card';
 import MapView from '../../components/common/MapView';
-import { getLiveVanLocation, getDriverByVanId, getStudentAttendance, getNotificationsByVanNumber, getVanWithRoute } from '../../services/supabaseService';
+import { getLiveVanLocation, getDriverByVanId, getNotificationsByVanNumber, getVanWithRoute } from '../../services/supabaseService';
 import { supabase } from '../../services/supabaseClient';
 import { Phone, MessageSquare, Bell } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,8 +11,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
   const [vanLocation, setVanLocation] = useState<LocationUpdate | null>(null);
-  const [driver, setDriver] = useState<(Driver & { name: string; email: string; }) | null>(null);
-  const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [driver, setDriver] = useState<(Driver & { name: string; email: string; avatar_url?: string; }) | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [vanDetails, setVanDetails] = useState<VanWithRoute | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +37,6 @@ const StudentDashboard: React.FC = () => {
       try {
         const locationPromise = getLiveVanLocation(vanId);
         const driverPromise = getDriverByVanId(vanId);
-        const attendancePromise = getStudentAttendance(user.student.id);
         const vanDetailsPromise = getVanWithRoute(vanId);
         const notificationsPromise = vanNumber
           ? getNotificationsByVanNumber(vanNumber)
@@ -48,20 +46,17 @@ const StudentDashboard: React.FC = () => {
           vanData,
           location,
           driverDetails,
-          attendanceRecords,
           initialNotifications,
         ] = await Promise.all([
           vanDetailsPromise,
           locationPromise,
           driverPromise,
-          attendancePromise,
           notificationsPromise,
         ]);
         
         setVanDetails(vanData);
         setVanLocation(location);
         setDriver(driverDetails);
-        setAttendance(attendanceRecords);
         setNotifications(initialNotifications);
 
         if (vanData && !vanData.route) {
@@ -82,10 +77,32 @@ const StudentDashboard: React.FC = () => {
   useEffect(() => {
     if (!vanNumber) return;
 
-    const channel = supabase.channel(`public:notifications:van_number=eq.${vanNumber}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
-        setNotifications(prev => [payload.new as Notification, ...prev]);
-      })
+    const channel = supabase
+      .channel('student-notifications-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `van_number=eq.${vanNumber}`,
+        },
+        async (payload) => {
+          const newNotification = payload.new as Notification;
+          
+          // The payload.new from a subscription doesn't include joined data like the driver's name.
+          // We need to fetch the driver's name separately for the new notification.
+          const { data: driverData } = await supabase
+            .from('users')
+            .select('name')
+            .eq('id', newNotification.sender_driver_id)
+            .single();
+
+          newNotification.driver_name = driverData?.name || 'Driver';
+
+          setNotifications(prev => [newNotification, ...prev]);
+        }
+      )
       .subscribe();
     
     return () => {
@@ -135,10 +152,11 @@ const StudentDashboard: React.FC = () => {
                 ) : (
                   <>
                     {error && <div className="text-center text-red-500 p-4">{error}</div>}
-                    {!error && (
+                    {!error && user && (
                       <MapView 
                           vanPosition={vanLocation ? [vanLocation.latitude, vanLocation.longitude] : undefined}
                           route={vanDetails?.route}
+                          userRole={user.role}
                       />
                     )}
                   </>
@@ -151,7 +169,7 @@ const StudentDashboard: React.FC = () => {
             {driver ? (
                 <>
                 <div className="flex items-center space-x-4">
-                    <img className="w-16 h-16 rounded-full" src="/assets/images/driver.png" alt="Driver"/>
+                    <img className="w-16 h-16 rounded-full object-cover" src={driver.avatar_url || 'https://gvhczqbwnvzbmmwnkuuc.supabase.co/storage/v1/object/public/images/images/driver.png'} alt="Driver"/>
                     <div>
                         <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100">{driver.name}</h4>
                         <p className="text-sm text-slate-500 dark:text-slate-400">Phone: {driver.phone || 'N/A'}</p>
@@ -175,29 +193,14 @@ const StudentDashboard: React.FC = () => {
                       <div className="flex items-start">
                           <Bell className="w-5 h-5 text-primary mr-3 mt-1 flex-shrink-0" />
                           <div>
-                            <p className="text-sm text-slate-800 dark:text-slate-200">{notif.message}</p>
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{notif.driver_name || 'Driver'} says:</p>
+                            <p className="text-sm text-slate-800 dark:text-slate-200 mt-1">{notif.message}</p>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{new Date(notif.created_at).toLocaleString()}</p>
                           </div>
                       </div>
                   </div>
                 )) : (
                   <p className="text-center text-slate-500 dark:text-slate-400">No notifications from your driver.</p>
-                )}
-            </div>
-          </Card>
-          <Card title="My Attendance">
-             <div className="space-y-3 max-h-48 overflow-y-auto">
-                {attendance.length > 0 ? attendance.map(att => (
-                  <div key={att.id} className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
-                    <div className="flex items-center">
-                      <p className="font-medium text-slate-700 dark:text-slate-200">{new Date(att.date).toLocaleDateString()}</p>
-                    </div>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${att.status === 'Present' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}>
-                      {att.status}
-                    </span>
-                  </div>
-                )) : (
-                  <p className="text-center text-slate-500 dark:text-slate-400">No attendance records found.</p>
                 )}
             </div>
           </Card>

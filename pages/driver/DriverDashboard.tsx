@@ -152,7 +152,7 @@ const DriverDashboard: React.FC = () => {
 
         <div className="lg:col-span-2 h-[70vh] lg:h-full">
           <Card className="h-full w-full flex flex-col" title={route?.route_name || "Your Location"} bodyClassName="flex-grow p-2">
-              <MapView driverPosition={location} route={route} />
+              <MapView driverPosition={location} route={route} userRole={user.role} />
           </Card>
         </div>
       </div>

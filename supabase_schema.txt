@@ -9,10 +9,6 @@ DO $$ BEGIN
     CREATE TYPE public.complaint_status AS ENUM ('Pending', 'Resolved');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-DO $$ BEGIN
-    CREATE TYPE public.attendance_status AS ENUM ('Present', 'Absent');
-EXCEPTION WHEN duplicate_object THEN null; END $$;
-
 
 -- 2. CREATE TABLES
 CREATE TABLE IF NOT EXISTS public.users (
@@ -111,16 +107,6 @@ CREATE TABLE IF NOT EXISTS public.complaints (
     created_at timestamp with time zone NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.attendance (
-    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-    student_id uuid NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
-    van_id uuid NOT NULL REFERENCES public.vans(id) ON DELETE CASCADE,
-    "date" date NOT NULL DEFAULT now()::date,
-    status public.attendance_status NOT NULL,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    CONSTRAINT attendance_student_id_date_key UNIQUE (student_id, date)
-);
-
 
 -- 3. SETUP AUTH TRIGGER (CRITICAL FIX FOR PROFILE CREATION)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -188,7 +174,6 @@ ALTER TABLE public.drivers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.complaints ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.routes ENABLE ROW LEVEL SECURITY;
 
 
@@ -288,14 +273,31 @@ CREATE POLICY "Allow admin full access on vans" ON public.vans FOR ALL USING (is
 DROP POLICY IF EXISTS "Allow authenticated users to view vans" ON public.vans;
 CREATE POLICY "Allow authenticated users to view vans" ON public.vans FOR SELECT USING (auth.role() = 'authenticated');
 
--- POLICIES for 'locations' table
+-- POLICIES for 'locations' table (RLS FIX)
 DROP POLICY IF EXISTS "Allow admin full access on locations" ON public.locations;
 CREATE POLICY "Allow admin full access on locations" ON public.locations FOR ALL USING (is_admin()) WITH CHECK (is_admin());
+
+-- Remove old, incorrect policies
 DROP POLICY IF EXISTS "Allow authenticated users to see locations" ON public.locations;
-CREATE POLICY "Allow authenticated users to see locations" ON public.locations FOR SELECT USING (auth.role() = 'authenticated');
 DROP POLICY IF EXISTS "Allow driver to update their van location" ON public.locations;
-CREATE POLICY "Allow driver to update their van location" ON public.locations FOR ALL
-USING (EXISTS (SELECT 1 FROM drivers WHERE user_id = auth.uid() AND drivers.van_id = locations.van_id));
+
+-- New SELECT policy: Users can only see the location for their assigned van.
+DROP POLICY IF EXISTS "Allow users to view their assigned van location" ON public.locations;
+CREATE POLICY "Allow users to view their assigned van location" ON public.locations
+FOR SELECT USING (
+  van_id = get_my_van_id()
+);
+
+-- New INSERT/UPDATE/DELETE policy: Drivers can only manage the location for their own van.
+DROP POLICY IF EXISTS "Allow drivers to manage their own van location" ON public.locations;
+CREATE POLICY "Allow drivers to manage their own van location" ON public.locations
+FOR ALL USING (
+  is_driver() AND van_id = get_my_van_id()
+)
+WITH CHECK (
+  is_driver() AND van_id = get_my_van_id()
+);
+
 
 -- POLICIES for 'complaints' table
 DROP POLICY IF EXISTS "Allow admin full access on complaints" ON public.complaints;
@@ -304,12 +306,6 @@ DROP POLICY IF EXISTS "Allow students to view their own complaints" ON public.co
 CREATE POLICY "Allow students to view their own complaints" ON public.complaints FOR SELECT USING (EXISTS (SELECT 1 FROM students WHERE user_id = auth.uid() and id = complaints.student_id));
 DROP POLICY IF EXISTS "Allow students to create complaints" ON public.complaints;
 CREATE POLICY "Allow students to create complaints" ON public.complaints FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM students WHERE user_id = auth.uid() and id = complaints.student_id));
-
--- POLICIES for 'attendance' table
-DROP POLICY IF EXISTS "Allow admin full access on attendance" ON public.attendance;
-CREATE POLICY "Allow admin full access on attendance" ON public.attendance FOR ALL USING (is_admin()) WITH CHECK (is_admin());
-DROP POLICY IF EXISTS "Allow students to view their own attendance" ON public.attendance;
-CREATE POLICY "Allow students to view their own attendance" ON public.attendance FOR SELECT USING (EXISTS (SELECT 1 FROM students WHERE user_id = auth.uid() and id = attendance.student_id));
 
 -- POLICIES for 'routes' table
 DROP POLICY IF EXISTS "Allow authenticated users to view routes" ON public.routes;
@@ -362,3 +358,65 @@ FOR INSERT WITH CHECK (
     SELECT 1 FROM drivers WHERE user_id = auth.uid() AND sender_driver_id = auth.uid()
   )
 );
+
+-- 8. ADD DATABASE FUNCTIONS FOR ATOMIC ASSIGNMENTS
+CREATE OR REPLACE FUNCTION assign_van_to_driver(target_driver_id uuid, target_van_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  current_van_id_for_driver uuid;
+  current_driver_id_for_van uuid;
+  target_van_no text;
+BEGIN
+  -- Get the driver's current van
+  SELECT van_id INTO current_van_id_for_driver FROM drivers WHERE id = target_driver_id;
+  
+  -- Step 1: Un-assign the target driver from their old van's record
+  IF current_van_id_for_driver IS NOT NULL THEN
+    UPDATE vans SET driver_id = NULL WHERE id = current_van_id_for_driver;
+  END IF;
+  
+  -- If we are assigning a new van...
+  IF target_van_id IS NOT NULL THEN
+    -- Get the target van's current driver and van_no
+    SELECT driver_id, van_no INTO current_driver_id_for_van, target_van_no FROM vans WHERE id = target_van_id;
+
+    -- Step 2: Un-assign the current driver from the target van (if any)
+    IF current_driver_id_for_van IS NOT NULL AND current_driver_id_for_van != target_driver_id THEN
+      UPDATE drivers SET van_id = NULL, van_number = NULL WHERE id = current_driver_id_for_van;
+    END IF;
+    
+    -- Step 3: Update the target van's driver_id
+    UPDATE vans SET driver_id = target_driver_id WHERE id = target_van_id;
+  END IF;
+  
+  -- Step 4: Update the target driver's record
+  UPDATE drivers
+  SET
+    van_id = target_van_id,
+    van_number = target_van_no -- will be null if target_van_id is null
+  WHERE id = target_driver_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION assign_van_to_student(target_student_id uuid, target_van_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  target_van_no text;
+BEGIN
+  IF target_van_id IS NOT NULL THEN
+    SELECT van_no INTO target_van_no FROM vans WHERE id = target_van_id;
+  END IF;
+  
+  UPDATE students
+  SET
+    van_id = target_van_id,
+    van_number = target_van_no
+  WHERE id = target_student_id;
+END;
+$$;
